@@ -1548,10 +1548,10 @@ Validation: All features in [0,1], no NaN values`}</CodeBlock>
               rows={[
                 ['Database write', '< 5ms', <span key="1" className="text-green-500 font-semibold">0.10ms</span>],
                 ['Database read', '< 2ms', <span key="2" className="text-green-500 font-semibold">0.02ms</span>],
-                ['Profile retrieval', '< 10ms', <span key="3" className="text-green-500 font-semibold">< 5ms</span>],
-                ['Graph traversal (depth 5)', '< 100ms', <span key="4" className="text-green-500 font-semibold">< 50ms</span>],
-                ['ZPD computation', '< 200ms', <span key="5" className="text-green-500 font-semibold">< 100ms</span>],
-                ['API response', '< 500ms', <span key="6" className="text-green-500 font-semibold">< 100ms</span>],
+                ['Profile retrieval', '< 10ms', <span key="3" className="text-green-500 font-semibold">&lt; 5ms</span>],
+                ['Graph traversal (depth 5)', '< 100ms', <span key="4" className="text-green-500 font-semibold">&lt; 50ms</span>],
+                ['ZPD computation', '< 200ms', <span key="5" className="text-green-500 font-semibold">&lt; 100ms</span>],
+                ['API response', '< 500ms', <span key="6" className="text-green-500 font-semibold">&lt; 100ms</span>],
               ]}
             />
 
