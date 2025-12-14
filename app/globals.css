@@ -1,0 +1,248 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Apple-inspired light theme - clean, minimal, elegant */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 8%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 92%;
+    --input: 0 0% 92%;
+    --ring: 0 0% 64%;
+    --radius: 0.75rem;
+
+    /* Chart colors */
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+
+    /* Sidebar specific */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 15%;
+    --sidebar-border: 0 0% 92%;
+    --sidebar-accent: 0 0% 94%;
+    --sidebar-accent-foreground: 0 0% 9%;
+    --sidebar-ring: 0 0% 64%;
+  }
+
+  .dark {
+    /* Apple-inspired dark theme - deep, rich, sophisticated */
+    --background: 0 0% 4%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 95%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 95%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 0 0% 36%;
+
+    /* Dark mode chart colors */
+    --chart-1: 220 70% 60%;
+    --chart-2: 160 60% 55%;
+    --chart-3: 30 80% 65%;
+    --chart-4: 280 65% 70%;
+    --chart-5: 340 75% 65%;
+
+    /* Dark sidebar */
+    --sidebar-background: 0 0% 6%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-border: 0 0% 12%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-ring: 0 0% 36%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  /* Apple-style glassmorphism card */
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-lg;
+  }
+
+  /* Subtle hover effect */
+  .hover-lift {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .hover-lift:hover {
+    @apply -translate-y-0.5 shadow-xl;
+  }
+
+  /* Modern form input */
+  .form-input {
+    @apply w-full px-4 py-3 bg-secondary/50 border border-border rounded-xl shadow-sm
+           focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50
+           transition-all duration-200 placeholder:text-muted-foreground;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-foreground mb-2;
+  }
+
+  .form-error {
+    @apply text-destructive text-sm mt-1.5;
+  }
+
+  /* Modern buttons */
+  .btn {
+    @apply px-5 py-2.5 rounded-xl font-medium transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-offset-2
+           active:scale-[0.98];
+  }
+
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90
+           shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25
+           focus:ring-primary/50;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80
+           focus:ring-secondary/50;
+  }
+
+  .btn-danger {
+    @apply bg-destructive text-destructive-foreground hover:bg-destructive/90
+           shadow-lg shadow-destructive/20 focus:ring-destructive/50;
+  }
+
+  .btn-success {
+    @apply bg-emerald-600 text-white hover:bg-emerald-700
+           shadow-lg shadow-emerald-600/20 focus:ring-emerald-500/50;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent hover:bg-accent text-foreground;
+  }
+
+  /* Modern card */
+  .card {
+    @apply bg-card rounded-2xl border border-border/50 p-6 shadow-sm
+           transition-all duration-300 hover:shadow-md;
+  }
+
+  /* Table styles */
+  .table-container {
+    @apply overflow-x-auto rounded-xl border border-border/50;
+  }
+
+  .data-table {
+    @apply min-w-full divide-y divide-border;
+  }
+
+  .data-table th {
+    @apply px-6 py-4 bg-muted/50 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider;
+  }
+
+  .data-table td {
+    @apply px-6 py-4 whitespace-nowrap text-sm text-foreground;
+  }
+
+  .data-table tr {
+    @apply transition-colors duration-150;
+  }
+
+  .data-table tbody tr:hover {
+    @apply bg-muted/30;
+  }
+
+  /* React Flow custom styles */
+  .react-flow__node-concept {
+    @apply bg-card border-2 rounded-2xl shadow-lg p-4 min-w-[160px]
+           transition-all duration-200 hover:shadow-xl;
+  }
+
+  .react-flow__node-concept.mastered {
+    @apply border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30;
+  }
+
+  .react-flow__node-concept.partial {
+    @apply border-amber-500 bg-amber-50 dark:bg-amber-950/30;
+  }
+
+  .react-flow__node-concept.gap {
+    @apply border-red-500 bg-red-50 dark:bg-red-950/30;
+  }
+
+  .react-flow__node-concept.not-started {
+    @apply border-muted bg-muted/50;
+  }
+
+  .react-flow__node-concept.zpd {
+    @apply ring-2 ring-amber-500 ring-offset-2 ring-offset-background;
+  }
+}
+
+@layer utilities {
+  /* Text gradient utility */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70;
+  }
+
+  /* Smooth scrolling */
+  .scroll-smooth {
+    scroll-behavior: smooth;
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Animation delays */
+  .animation-delay-100 { animation-delay: 100ms; }
+  .animation-delay-200 { animation-delay: 200ms; }
+  .animation-delay-300 { animation-delay: 300ms; }
+  .animation-delay-400 { animation-delay: 400ms; }
+  .animation-delay-500 { animation-delay: 500ms; }
+}
