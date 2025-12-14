@@ -51,6 +51,19 @@ import {
   CheckCircle,
   XCircle,
   HelpCircle,
+  ShieldCheck,
+  Fingerprint,
+  HeartHandshake,
+  Flame,
+  Star,
+  Trophy,
+  Frown,
+  Smile,
+  Meh,
+  BrainCircuit,
+  Route,
+  MapPin,
+  Gauge,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -85,17 +98,22 @@ function CodeBlock({ children, title }: { children: string; title?: string }) {
 }
 
 // Section component
-function Section({ id, title, icon: Icon, children }: { id: string; title: string; icon?: React.ElementType; children: React.ReactNode }) {
+function Section({ id, title, icon: Icon, children, badge }: { id: string; title: string; icon?: React.ElementType; children: React.ReactNode; badge?: string }) {
   return (
     <motion.section
       id={id}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="mb-12 scroll-mt-20"
+      className="mb-16 scroll-mt-20"
     >
       <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 text-foreground">
         {Icon && <Icon className="w-6 h-6 text-primary" />}
         {title}
+        {badge && (
+          <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">
+            {badge}
+          </span>
+        )}
       </h2>
       {children}
     </motion.section>
@@ -132,43 +150,41 @@ function Table({ headers, rows }: { headers: string[]; rows: (string | React.Rea
   );
 }
 
+// Value Card component
+function ValueCard({ icon: Icon, title, description, gradient }: { icon: React.ElementType; title: string; description: string; gradient: string }) {
+  return (
+    <div className="p-6 rounded-xl border border-border/50 bg-card/50 hover:bg-card transition-colors">
+      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center mb-4", gradient)}>
+        <Icon className="w-6 h-6 text-white" />
+      </div>
+      <h3 className="font-semibold text-lg mb-2">{title}</h3>
+      <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
+    </div>
+  );
+}
+
 // Table of Contents
 function TableOfContents() {
   const sections = [
-    { id: 'what-is', label: 'What Is LearnGraph?' },
-    { id: 'quick-test', label: 'Quick Test (2 Minutes)' },
-    { id: 'architecture', label: 'Dual-Graph Architecture' },
-    { id: 'pipeline', label: 'Learning Pipeline' },
-    { id: 'zpd-step-by-step', label: 'ZPD Step-by-Step' },
+    { id: 'what-is', label: 'The Vision' },
+    { id: 'the-problem', label: 'The Problem We Solve' },
+    { id: 'privacy', label: 'Privacy First' },
+    { id: 'architecture', label: 'How It Works' },
+    { id: 'gap-detection', label: 'Knowledge Gap Detection' },
+    { id: 'zpd', label: 'Zone of Proximal Development' },
     { id: 'domains', label: '39 Psychological Domains' },
-    { id: 'gaps', label: 'Gap Detection' },
-    { id: 'forgetting', label: 'Forgetting Curve' },
-    { id: 'spaced-repetition', label: 'Spaced Repetition' },
-    { id: 'blooms', label: "Bloom's Taxonomy" },
-    { id: 'scaffolding', label: 'Scaffolding Strategies' },
-    { id: 'data-architecture', label: 'Data Architecture' },
-    { id: 'rag-context', label: 'RAG Context' },
+    { id: 'scaffolding', label: 'Personalized Scaffolding' },
+    { id: 'forgetting', label: 'Fighting Forgetting' },
     { id: 'comparison', label: 'Traditional vs LearnGraph' },
     { id: 'who-benefits', label: 'Who Benefits?' },
-    { id: 'quick-start', label: 'Quick Start Code' },
-    { id: 'requirements', label: 'System Requirements' },
-    { id: 'status', label: 'Implementation Status' },
-    { id: 'psychometric-data', label: 'Getting Psychometric Data' },
-    { id: 'teacher-workflow', label: 'Teacher Workflow' },
-    { id: 'assessments', label: 'AI Assessments' },
-    { id: 'future', label: 'Future Vision' },
-    { id: 'validation', label: 'Validation Tests' },
-    { id: 'metrics', label: 'Success Metrics' },
     { id: 'magic-moments', label: 'Magic Moments' },
-    { id: 'privacy', label: 'Privacy & Trust' },
-    { id: 'api-reference', label: 'API Reference' },
-    { id: 'edu-psychology', label: 'Educational Psychology' },
-    { id: 'expert-perspectives', label: 'Expert Perspectives' },
+    { id: 'quick-test', label: 'Try It Yourself' },
+    { id: 'technical', label: 'Technical Deep Dive' },
     { id: 'bottom-line', label: 'The Bottom Line' },
   ];
 
   return (
-    <div className="mb-12 p-6 rounded-xl border border-border/50 bg-card/50">
+    <div className="mb-16 p-6 rounded-xl border border-border/50 bg-card/50">
       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
         <BookMarked className="w-5 h-5 text-primary" />
         Table of Contents
@@ -201,184 +217,250 @@ export default function AboutPage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="mb-12 text-center"
+            className="mb-16 text-center"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-              <Sparkles className="w-4 h-4" />
-              Psychometric-Adaptive Learning Intelligence
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 text-emerald-500 text-sm font-medium mb-6">
+              <ShieldCheck className="w-4 h-4" />
+              100% Private • On-Device • No Cloud Required
             </div>
             <h1 className="text-5xl font-bold tracking-tight text-foreground mb-6">
               <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
                 LearnGraph
               </span>
             </h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              A <strong>Local Browser-Based GraphRAG</strong> that makes any LLM smarter about each specific user.
-              LearnGraph combines psychometric profiling with educational psychology to deliver truly personalized learning experiences.
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed mb-4">
+              A <strong>Local Browser-Based GraphRAG</strong> that transforms AI tutors from generic assistants into deeply personalized learning companions who truly understand you.
+            </p>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Every learner is unique. Yet every AI tutor treats them the same.
+              <span className="text-primary font-medium"> Until now.</span>
             </p>
           </motion.section>
 
           {/* Table of Contents */}
           <TableOfContents />
 
-          {/* What Is LearnGraph */}
-          <Section id="what-is" title="What Is LearnGraph?" icon={HelpCircle}>
-            <p className="text-muted-foreground mb-4">
-              LearnGraph is a <strong>Graph RAG (Retrieval-Augmented Generation) system</strong> that transforms generic AI tutoring into deeply personalized education. Instead of giving everyone the same explanation, LearnGraph provides AI tutors with comprehensive context about each learner.
-            </p>
+          {/* What Is LearnGraph - THE VISION */}
+          <Section id="what-is" title="The Vision: Education That Truly Sees You" icon={Heart}>
+            <div className="space-y-6">
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                Imagine an AI tutor that doesn't just know <em>what</em> you're learning, but understands <em>who you are</em> as a learner. One that knows you're a visual learner who gets anxious about math, that you process information deeply but slowly, that you respond better to analogies than abstract definitions.
+              </p>
 
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
-              <div className="p-6 rounded-xl border border-red-500/20 bg-red-500/5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-lg bg-red-500/10">
-                    <XCircle className="w-5 h-5 text-red-500" />
-                  </div>
-                  <h3 className="font-semibold">WITHOUT LearnGraph</h3>
-                </div>
-                <CodeBlock>{`User: "Explain linear equations"
-LLM: [Generic explanation, same for everyone]`}</CodeBlock>
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                Imagine a system that remembers that you struggled with "moving terms" in algebra three months ago, notices when you're about to forget something critical, and knows exactly which teaching approach will click for <em>you</em> specifically.
+              </p>
+
+              <div className="p-6 rounded-xl bg-gradient-to-br from-primary/5 to-purple-500/5 border border-primary/20">
+                <p className="text-lg font-medium text-foreground mb-4">
+                  That's LearnGraph.
+                </p>
+                <p className="text-muted-foreground leading-relaxed mb-4">
+                  It's not another chatbot. It's not a database. It's a <strong>personalization layer</strong> that makes any AI tutor profoundly smarter about each individual learner. LearnGraph is the difference between "here's how algebra works" and "here's how algebra works <em>for you, Sarah, in the way you learn best, building on what you already know, at exactly the right time</em>."
+                </p>
+                <p className="text-muted-foreground leading-relaxed">
+                  And here's the remarkable part: <strong>it runs entirely in your browser</strong>. No servers. No cloud. No tokens to count. No API costs. Your most intimate learning data—your psychological profile, your struggles, your misconceptions—never leaves your device. It's private by design, secure by architecture, and environmentally friendly because there's no data center crunching your requests.
+                </p>
               </div>
 
-              <div className="p-6 rounded-xl border border-green-500/20 bg-green-500/5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-lg bg-green-500/10">
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                  </div>
-                  <h3 className="font-semibold">WITH LearnGraph</h3>
-                </div>
-                <CodeBlock>{`User: "Explain linear equations"
-System retrieves: visual learner, struggles with
-"moving terms", high anxiety, mastered arithmetic,
-partial algebra knowledge
-
-LLM: [Personalized explanation with diagrams,
-addresses their specific confusion, gentle
-encouraging tone, builds on what they already know]`}</CodeBlock>
+              <div className="grid md:grid-cols-3 gap-6 mt-8">
+                <ValueCard
+                  icon={Fingerprint}
+                  title="Deeply Personal"
+                  description="Track 39 psychological dimensions to understand how each learner thinks, feels, and processes information. Not one-size-fits-all—one-size-fits-you."
+                  gradient="bg-gradient-to-br from-indigo-500 to-purple-500"
+                />
+                <ValueCard
+                  icon={ShieldCheck}
+                  title="100% Private"
+                  description="Everything runs locally in your browser. Your psychological profile, learning struggles, and progress never leave your device. Your data belongs to you."
+                  gradient="bg-gradient-to-br from-emerald-500 to-green-500"
+                />
+                <ValueCard
+                  icon={BrainCircuit}
+                  title="Scientifically Grounded"
+                  description="Built on Vygotsky's Zone of Proximal Development, Ebbinghaus's forgetting curve, and decades of educational psychology research. Not guesswork—science."
+                  gradient="bg-gradient-to-br from-amber-500 to-orange-500"
+                />
               </div>
-            </div>
-
-            <h3 className="text-lg font-semibold mb-4">Key Value Propositions</h3>
-            <Table
-              headers={['Feature', 'Description']}
-              rows={[
-                [<strong key="1">"What should I learn next?"</strong>, 'Compares your mastery against prerequisites to find optimal concepts'],
-                [<strong key="2">Personalized explanations</strong>, 'Gives LLMs your learning style, misconceptions, and preferences'],
-                [<strong key="3">Gap detection</strong>, 'Finds missing, forgotten, or misunderstood knowledge'],
-                [<strong key="4">Spaced repetition</strong>, 'Schedules reviews based on your personal forgetting curve'],
-                [<strong key="5">Smart scaffolding</strong>, 'Selects teaching strategies based on your psychometric profile'],
-                [<strong key="6">Learning paths</strong>, 'Generates custom roadmaps to any learning goal'],
-              ]}
-            />
-
-            <h3 className="text-lg font-semibold mb-4 mt-6">Main Features: The Core Value</h3>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[
-                { icon: Target, title: 'Personalized Learning Paths', desc: 'Every student gets a unique path based on what they know and how they learn' },
-                { icon: Brain, title: 'Psychometric Profiling', desc: 'Track 39 psychological domains to understand how each learner thinks' },
-                { icon: GitBranch, title: 'Prerequisite Intelligence', desc: "Never learn something you're not ready for; always know what comes next" },
-                { icon: Search, title: 'Gap Detection', desc: 'Automatically find missing knowledge, forgotten concepts, and misconceptions' },
-                { icon: Clock, title: 'Spaced Repetition', desc: 'Science-backed review scheduling using the Ebbinghaus forgetting curve' },
-                { icon: Lightbulb, title: 'ZPD Engine', desc: "Vygotsky's Zone of Proximal Development to find concepts that are challenging but achievable" },
-                { icon: Bot, title: 'AI Curriculum Ingestion', desc: 'Teachers describe a course in plain English, AI generates the knowledge graph', badge: 'NEW' },
-                { icon: ClipboardList, title: 'AI Assessment Generation', desc: 'Auto-generate quizzes and tests for each concept (toggle on/off)', badge: 'NEW' },
-                { icon: MessageSquare, title: 'RAG Context for LLMs', desc: 'Give any AI tutor rich context about the learner for personalized responses' },
-              ].map((feature, i) => (
-                <div key={i} className="p-4 rounded-lg border border-border/50 bg-card/50 hover:bg-card transition-colors">
-                  <div className="flex items-center gap-2 mb-2">
-                    <feature.icon className="w-5 h-5 text-primary" />
-                    <h4 className="font-medium text-sm">{feature.title}</h4>
-                    {feature.badge && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-500 font-medium">
-                        {feature.badge}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">{feature.desc}</p>
-                </div>
-              ))}
             </div>
           </Section>
 
-          {/* Quick Test */}
-          <Section id="quick-test" title="Quick Test: See the Value in 2 Minutes" icon={Play}>
-            <p className="text-muted-foreground mb-4">
-              Want to quickly see what LearnGraph does? Run these commands after starting the app:
-            </p>
+          {/* THE PROBLEM WE SOLVE */}
+          <Section id="the-problem" title="The Problem: AI Tutors Are Blind" icon={AlertTriangle}>
+            <div className="space-y-6">
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                Today's AI tutors are remarkably intelligent—but they're also remarkably blind. They can explain quantum physics or solve differential equations, but they have no idea who they're talking to.
+              </p>
 
-            <div className="space-y-4">
-              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-sm flex items-center justify-center">1</span>
-                  Create a Learner
-                </h4>
-                <CodeBlock>{`curl -X POST http://localhost:3000/api/learners \\
-  -H "Content-Type: application/json" \\
-  -d '{"name": "Test User", "email": "test@example.com"}'`}</CodeBlock>
-                <p className="text-xs text-muted-foreground">Save the <code className="bg-muted px-1 rounded">userId</code> from the response.</p>
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                And the solutions that try to fix this? They come with their own problems: <strong>privacy nightmares</strong> (your learning struggles stored on corporate servers), <strong>security risks</strong> (data breaches exposing your psychological profile), <strong>mounting costs</strong> (every query burns tokens and API calls), and <strong>environmental impact</strong> (data centers consuming electricity for every personalization request). There had to be a better way.
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="p-6 rounded-xl border border-red-500/20 bg-red-500/5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 rounded-lg bg-red-500/10">
+                      <XCircle className="w-6 h-6 text-red-500" />
+                    </div>
+                    <h3 className="font-semibold text-lg">WITHOUT LearnGraph</h3>
+                  </div>
+                  <div className="space-y-4 text-sm">
+                    <div className="p-3 rounded-lg bg-background/50">
+                      <p className="font-medium mb-1">User: "Explain linear equations"</p>
+                      <p className="text-muted-foreground">AI: Gives the same generic explanation to every learner—whether they're a visual learner or auditory, whether they're anxious or confident, whether they already know arithmetic or not.</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-background/50">
+                      <p className="font-medium mb-1">User: "What should I learn next?"</p>
+                      <p className="text-muted-foreground">AI: No idea. Can only guess based on what seems logical, not what's actually appropriate for this specific learner's knowledge state and readiness.</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-background/50">
+                      <p className="font-medium mb-1">User: "I'm stuck on this problem"</p>
+                      <p className="text-muted-foreground">AI: Provides help that might work for some learners, but doesn't know this learner's specific misconceptions, struggles, or preferred learning approach.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 rounded-xl border border-green-500/20 bg-green-500/5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 rounded-lg bg-green-500/10">
+                      <CheckCircle className="w-6 h-6 text-green-500" />
+                    </div>
+                    <h3 className="font-semibold text-lg">WITH LearnGraph</h3>
+                  </div>
+                  <div className="space-y-4 text-sm">
+                    <div className="p-3 rounded-lg bg-background/50">
+                      <p className="font-medium mb-1">User: "Explain linear equations"</p>
+                      <p className="text-muted-foreground">AI receives: "Sarah is a visual learner with high math anxiety, struggles with 'moving terms,' responds well to gentle encouragement, has mastered arithmetic."</p>
+                      <p className="text-green-600 mt-2 font-medium">→ Personalized explanation with diagrams, addresses her specific confusion, warm tone, builds on arithmetic knowledge.</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-background/50">
+                      <p className="font-medium mb-1">User: "What should I learn next?"</p>
+                      <p className="text-muted-foreground">AI receives: Full knowledge state, mastery levels, ZPD analysis showing which concepts Sarah is ready for.</p>
+                      <p className="text-green-600 mt-2 font-medium">→ "Based on your strong arithmetic foundation, you're ready for algebraic expressions. Want to start there?"</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-background/50">
+                      <p className="font-medium mb-1">User: "I'm stuck on this problem"</p>
+                      <p className="text-muted-foreground">AI receives: Sarah's logged misconception about "terms don't move, we do inverse operations," her preference for visual scaffolding.</p>
+                      <p className="text-green-600 mt-2 font-medium">→ Uses visual diagram to show balance method, directly addresses her specific misunderstanding.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-sm flex items-center justify-center">2</span>
-                  Add Sample Curriculum
-                </h4>
-                <CodeBlock>{`curl -X POST http://localhost:3000/api/seed-concepts`}</CodeBlock>
-                <p className="text-xs text-muted-foreground">This creates a sample knowledge graph with concepts and prerequisites.</p>
-              </div>
-
-              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-sm flex items-center justify-center">3</span>
-                  Track Some Knowledge
-                </h4>
-                <CodeBlock>{`curl -X POST http://localhost:3000/api/knowledge-state \\
-  -H "Content-Type: application/json" \\
-  -d '{"userId": "YOUR_USER_ID", "conceptId": "arithmetic", "mastery": 85}'`}</CodeBlock>
-              </div>
-
-              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-sm flex items-center justify-center">4</span>
-                  Ask "What Should I Learn Next?"
-                </h4>
-                <CodeBlock>{`curl "http://localhost:3000/api/zpd?userId=YOUR_USER_ID"`}</CodeBlock>
-                <p className="text-xs text-green-500">Expected: Concepts in your Zone of Proximal Development — things you're ready to learn.</p>
-              </div>
-
-              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-sm flex items-center justify-center">5</span>
-                  Check for Knowledge Gaps
-                </h4>
-                <CodeBlock>{`curl "http://localhost:3000/api/gaps?userId=YOUR_USER_ID"`}</CodeBlock>
-                <p className="text-xs text-green-500">Expected: Missing prerequisites, forgotten concepts, and misconceptions.</p>
-              </div>
-
-              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-sm flex items-center justify-center">6</span>
-                  View in the UI
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  Open <code className="bg-muted px-1 rounded">http://localhost:3000/graph</code> to see the knowledge graph visualized, with your mastery levels overlaid.
+              <div className="p-6 rounded-xl border border-border/50 bg-card/50">
+                <h3 className="font-semibold text-lg mb-3">The Gap That LearnGraph Fills</h3>
+                <p className="text-muted-foreground leading-relaxed mb-4">
+                  Large Language Models are incredibly capable—but they're stateless. Every conversation starts fresh. They don't remember you, don't track your progress, don't understand your unique cognitive fingerprint. LearnGraph is the <strong>persistent memory and personalization layer</strong> that bridges this gap. It's the difference between a tutor who meets you for the first time every session, and one who has worked with you for years.
+                </p>
+                <p className="text-muted-foreground leading-relaxed">
+                  But unlike cloud-based solutions that store your intimate learning data on corporate servers, LearnGraph runs <strong>100% in your browser</strong>. No tokens burned. No API bills. No privacy concerns. No security vulnerabilities from network transmission. And because all computation happens locally, it's better for the planet—no energy-hungry data centers processing your every question.
                 </p>
               </div>
             </div>
           </Section>
 
-          {/* Dual-Graph Architecture */}
-          <Section id="architecture" title="The Dual-Graph Architecture" icon={Layers}>
-            <p className="text-muted-foreground mb-4">
-              LearnGraph uses a single database with two interconnected graphs:
-            </p>
-            <CodeBlock title="System Architecture">{`┌─────────────────────────────────────────────────────────────────────────┐
-│                           LevelDB Instance                               │
+          {/* PRIVACY FIRST */}
+          <Section id="privacy" title="Privacy First: Your Mind, Your Data" icon={Lock} badge="100% On-Device">
+            <div className="space-y-6">
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                Your psychological profile is perhaps the most intimate data that exists about you. It reveals how you think, what you struggle with, your anxieties and strengths. <strong>This data should never leave your device.</strong>
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="p-6 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
+                  <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                    What This Means For You
+                  </h3>
+                  <ul className="space-y-3 text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                      <span><strong>No account required</strong> — start using LearnGraph immediately</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                      <span><strong>No data transmitted</strong> — everything stays in your browser's local storage</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                      <span><strong>No tracking</strong> — we don't know who you are or what you're learning</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                      <span><strong>Your data, your control</strong> — export, delete, or modify anytime</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                      <span><strong>Works offline</strong> — no internet required after initial load</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="p-6 rounded-xl border border-border/50 bg-card/50">
+                  <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                    <Database className="w-5 h-5 text-primary" />
+                    Technical Implementation
+                  </h3>
+                  <ul className="space-y-3 text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <ChevronRight className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                      <span><strong>LevelDB</strong> — Embedded database runs entirely in browser</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <ChevronRight className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                      <span><strong>IndexedDB</strong> — Browser-native storage for persistence</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <ChevronRight className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                      <span><strong>No server calls</strong> — All graph operations happen locally</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <ChevronRight className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                      <span><strong>Open source</strong> — Verify our privacy claims yourself</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <ChevronRight className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                      <span><strong>Custom Graph DB</strong> — 2,000+ line dual-graph engine with zero external dependencies</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="p-5 rounded-xl bg-gradient-to-r from-emerald-500/10 to-green-500/10 border border-emerald-500/20">
+                <p className="text-sm text-muted-foreground">
+                  <strong className="text-foreground">Why this matters:</strong> When you use cloud-based learning systems, your struggles, misconceptions, and psychological profile become someone else's data. They can be sold, breached, or used to profile you. LearnGraph believes learning is personal—and your personal data should stay personal.
+                </p>
+              </div>
+            </div>
+          </Section>
+
+          {/* HOW IT WORKS - ARCHITECTURE */}
+          <Section id="architecture" title="How It Works: The Dual-Graph Brain" icon={Network}>
+            <div className="space-y-6">
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                LearnGraph maintains two interconnected graphs that work together to understand both what you're learning and who you are as a learner.
+              </p>
+
+              <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 mb-6">
+                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                  <Lightbulb className="w-5 h-5 text-primary" />
+                  Why Two Graphs?
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Traditional learning systems track either <em>what</em> you know OR <em>who</em> you are—never both in an integrated way. LearnGraph's dual-graph architecture connects your psychological profile (Graph A) with your knowledge state (Graph B), enabling truly personalized recommendations that consider both your readiness and your learning style.
+                </p>
+              </div>
+
+              <CodeBlock title="The Dual-Graph Architecture">{`┌─────────────────────────────────────────────────────────────────────────┐
+│                           LearnGraph Engine                              │
 │                                                                          │
 │  ┌─────────────────────────────┐    ┌─────────────────────────────────┐ │
 │  │     LEARNER MODEL          │    │      KNOWLEDGE MODEL            │ │
 │  │     (Graph A)              │    │      (Graph B)                  │ │
+│  │     "Who You Are"          │    │      "What You're Learning"     │ │
 │  │                            │    │                                 │ │
-│  │  • User Profiles           │    │  • Concept Nodes                │ │
+│  │  • Your Profile            │    │  • Concept Nodes                │ │
 │  │  • 39 Psychometric Scores  │◄──►│  • Prerequisite Edges           │ │
 │  │  • Knowledge State         │    │  • Bloom's Taxonomy Tags        │ │
 │  │  • Learning History        │    │  • Difficulty Ratings           │ │
@@ -391,111 +473,225 @@ encouraging tone, builds on what they already know]`}</CodeBlock>
 │                                    │                                    │
 │                          ┌─────────▼─────────┐                          │
 │                          │   ZPD BRIDGE      │                          │
-│                          │   (Computed)      │                          │
 │                          │                   │                          │
-│                          │ Zone of Proximal  │                          │
-│                          │ Development Engine│                          │
+│                          │ "What should you  │                          │
+│                          │  learn next, and  │                          │
+│                          │  HOW should we    │                          │
+│                          │  teach it to YOU?"│                          │
 │                          └───────────────────┘                          │
 └─────────────────────────────────────────────────────────────────────────┘`}</CodeBlock>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="p-6 rounded-xl border border-indigo-500/20 bg-indigo-500/5">
+                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-indigo-500" />
+                    Graph A: The Learner Model
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    This graph represents <em>you</em>. Not a generic learner, but your specific psychological profile, learning history, and knowledge state.
+                  </p>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li>• <strong>39 Psychometric Dimensions:</strong> From Big Five personality to learning styles</li>
+                    <li>• <strong>Knowledge States:</strong> Your mastery level for every concept</li>
+                    <li>• <strong>Misconceptions:</strong> Where you've gone wrong before</li>
+                    <li>• <strong>Learning History:</strong> Timestamps, repetitions, decay rates</li>
+                    <li>• <strong>Preferences:</strong> How you like to learn</li>
+                  </ul>
+                </div>
+
+                <div className="p-6 rounded-xl border border-purple-500/20 bg-purple-500/5">
+                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-purple-500" />
+                    Graph B: The Knowledge Model
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    This graph represents your curriculum—the knowledge domain you're learning, with all its internal structure.
+                  </p>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li>• <strong>Concept Nodes:</strong> Individual things you can learn</li>
+                    <li>• <strong>Prerequisite Edges:</strong> What comes before what</li>
+                    <li>• <strong>Bloom's Levels:</strong> Remember → Understand → Apply → Analyze → Evaluate → Create</li>
+                    <li>• <strong>Difficulty Ratings:</strong> How hard each concept is</li>
+                    <li>• <strong>Scaffolding Strategies:</strong> Best ways to teach each concept</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="p-6 rounded-xl border border-amber-500/20 bg-amber-500/5">
+                <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-amber-500" />
+                  The ZPD Bridge: Where Magic Happens
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  The ZPD Bridge computes the intersection of both graphs—what you're ready to learn (from Graph B) given who you are (from Graph A).
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  When you ask "What should I learn next?", LearnGraph doesn't just check prerequisites. It considers your psychological readiness, your anxiety levels, your learning style, your recent forgetting patterns, and your metacognitive abilities. The result is recommendations that are genuinely achievable and optimized for <em>you</em>.
+                </p>
+              </div>
+            </div>
           </Section>
 
-          {/* Learning Pipeline */}
-          <Section id="pipeline" title="How It Works: The Learning Pipeline" icon={Zap}>
-            <p className="text-muted-foreground mb-4">
-              When you interact with LearnGraph, multiple systems work together automatically:
-            </p>
-            <CodeBlock title="Context Retrieval Pipeline">{`┌───────────────────────────────────────────────────────────────────────────┐
-│                          USER INTERACTION                                  │
-│                                                                           │
-│   "What should I learn next?"   "Explain this concept"   "I'm stuck"     │
-│                    │                    │                     │           │
-└────────────────────┼────────────────────┼─────────────────────┼───────────┘
-                     │                    │                     │
-                     ▼                    ▼                     ▼
-┌───────────────────────────────────────────────────────────────────────────┐
-│                       CONTEXT RETRIEVAL                                    │
-│                                                                           │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────┐   │
-│  │ Learner Profile │  │ Knowledge State │  │   ZPD Computation       │   │
-│  │                 │  │                 │  │                         │   │
-│  │ • Big Five      │  │ • Mastery %     │  │ • Ready concepts        │   │
-│  │ • Learning      │  │ • Bloom Level   │  │ • Gap analysis          │   │
-│  │   Style         │  │ • Last Access   │  │ • Prerequisites met     │   │
-│  │ • Cognitive     │  │ • Decay Rate    │  │ • Scaffolding needed    │   │
-│  │   Profile       │  │ • Misconceptions│  │                         │   │
-│  └────────┬────────┘  └────────┬────────┘  └───────────┬─────────────┘   │
-│           │                    │                       │                  │
-│           └────────────────────┼───────────────────────┘                  │
-│                                │                                          │
-│                                ▼                                          │
-│                    ┌───────────────────────┐                              │
-│                    │   RAG CONTEXT         │                              │
-│                    │   AGGREGATOR          │                              │
-│                    │                       │                              │
-│                    │   Combines learner    │                              │
-│                    │   data + knowledge    │                              │
-│                    │   graph + ZPD into    │                              │
-│                    │   < 2000 tokens       │                              │
-│                    └───────────┬───────────┘                              │
-│                                │                                          │
-└────────────────────────────────┼──────────────────────────────────────────┘
-                                 │
-                                 ▼
-┌───────────────────────────────────────────────────────────────────────────┐
-│                       LLM AUGMENTED RESPONSE                               │
-│                                                                           │
-│   The AI tutor now knows:                                                 │
-│   • Your learning style (visual/auditory/kinesthetic)                     │
-│   • Your current mastery of relevant concepts                             │
-│   • Your specific misconceptions to address                               │
-│   • What scaffolding strategies work for you                              │
-│   • What you should learn next                                            │
-│                                                                           │
-│   → Delivers personalized, context-aware response                         │
-│                                                                           │
-└───────────────────────────────────────────────────────────────────────────┘`}</CodeBlock>
-          </Section>
-
-          {/* ZPD Step by Step */}
-          <Section id="zpd-step-by-step" title="What Happens When You Ask 'What Should I Learn Next?'" icon={Target}>
+          {/* KNOWLEDGE GAP DETECTION - CORE FEATURE */}
+          <Section id="gap-detection" title="Knowledge Gap Detection: The Heart of LearnGraph" icon={Search} badge="CORE FEATURE">
             <div className="space-y-6">
-              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
-                <h4 className="font-semibold mb-2">1. Profile Retrieval</h4>
-                <p className="text-sm text-muted-foreground">System loads your 39 psychometric domain scores and learning preferences</p>
+              <div className="p-6 rounded-xl bg-gradient-to-br from-red-500/5 to-orange-500/5 border border-red-500/20">
+                <p className="text-lg text-muted-foreground leading-relaxed">
+                  Every learner has gaps—concepts they never learned, things they half-understand, knowledge they've forgotten, and mental models that are subtly wrong. <strong>Traditional education is terrible at finding these gaps.</strong> You only discover them when you fail a test or hit a wall trying to learn something new.
+                </p>
+                <p className="text-lg text-foreground font-medium mt-4">
+                  LearnGraph changes this. It continuously, proactively hunts for gaps before they become problems.
+                </p>
               </div>
 
-              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
-                <h4 className="font-semibold mb-2">2. Knowledge State Scan</h4>
-                <p className="text-sm text-muted-foreground">Checks mastery level for all concepts you've studied</p>
+              <h3 className="text-xl font-semibold mt-8 mb-4">The Four Types of Knowledge Gaps</h3>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="p-6 rounded-xl border border-border/50 bg-card/50">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+                      <XCircle className="w-5 h-5 text-red-500" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">Missing Gaps</h4>
+                      <p className="text-xs text-muted-foreground">Never learned at all</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    You've never been exposed to this concept, but you need it as a prerequisite for something you're trying to learn.
+                  </p>
+                  <div className="p-3 rounded-lg bg-muted/30">
+                    <p className="text-xs font-medium mb-1">Example:</p>
+                    <p className="text-xs text-muted-foreground">Trying to learn calculus but never learned algebra. LearnGraph detects this immediately and builds a remediation path.</p>
+                  </div>
+                  <div className="mt-3 p-2 rounded-lg bg-red-500/5 border border-red-500/10">
+                    <p className="text-xs font-medium text-red-500">Action: Full teaching sequence required</p>
+                  </div>
+                </div>
+
+                <div className="p-6 rounded-xl border border-border/50 bg-card/50">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                      <Meh className="w-5 h-5 text-amber-500" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">Partial Gaps</h4>
+                      <p className="text-xs text-muted-foreground">Started but not mastered</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    You've studied this concept but haven't reached mastery. Your knowledge is incomplete or shaky.
+                  </p>
+                  <div className="p-3 rounded-lg bg-muted/30">
+                    <p className="text-xs font-medium mb-1">Example:</p>
+                    <p className="text-xs text-muted-foreground">You understand fractions conceptually but struggle when denominators are different. LearnGraph tracks exactly where your understanding breaks down.</p>
+                  </div>
+                  <div className="mt-3 p-2 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                    <p className="text-xs font-medium text-amber-500">Action: Targeted reinforcement of weak areas</p>
+                  </div>
+                </div>
+
+                <div className="p-6 rounded-xl border border-border/50 bg-card/50">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                      <Clock className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">Forgotten Gaps</h4>
+                      <p className="text-xs text-muted-foreground">Knew it, lost it</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    You once had this mastered, but memory has decayed over time. This is the most common and most invisible type of gap.
+                  </p>
+                  <div className="p-3 rounded-lg bg-muted/30">
+                    <p className="text-xs font-medium mb-1">Example:</p>
+                    <p className="text-xs text-muted-foreground">You learned quadratic equations last year and got an A. But without practice, your retention has dropped to 40%. LearnGraph's forgetting curve model detected this.</p>
+                  </div>
+                  <div className="mt-3 p-2 rounded-lg bg-blue-500/5 border border-blue-500/10">
+                    <p className="text-xs font-medium text-blue-500">Action: Quick refresh review, not full reteaching</p>
+                  </div>
+                </div>
+
+                <div className="p-6 rounded-xl border border-border/50 bg-card/50">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                      <AlertTriangle className="w-5 h-5 text-purple-500" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">Misconception Gaps</h4>
+                      <p className="text-xs text-muted-foreground">Wrong mental model</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    The most dangerous type. You <em>think</em> you understand, but your mental model is incorrect. This leads to systematic errors.
+                  </p>
+                  <div className="p-3 rounded-lg bg-muted/30">
+                    <p className="text-xs font-medium mb-1">Example:</p>
+                    <p className="text-xs text-muted-foreground">You believe you can "move" terms in an equation. Actually, you perform inverse operations. This misconception causes errors in more advanced math.</p>
+                  </div>
+                  <div className="mt-3 p-2 rounded-lg bg-purple-500/5 border border-purple-500/10">
+                    <p className="text-xs font-medium text-purple-500">Action: Targeted correction with counterexamples</p>
+                  </div>
+                </div>
               </div>
 
-              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
-                <h4 className="font-semibold mb-2">3. Prerequisite Analysis</h4>
-                <p className="text-sm text-muted-foreground">For each concept you haven't mastered:</p>
-                <ul className="text-sm text-muted-foreground list-disc list-inside mt-2">
-                  <li>Counts how many prerequisites you've completed</li>
-                  <li>Calculates "readiness score" (0-1)</li>
-                </ul>
+              <CodeBlock title="Gap Detection Engine">{`┌───────────────────────────────────────────────────────────────────────────┐
+│                        GAP DETECTION ENGINE                                │
+│                                                                           │
+│   For each concept in the knowledge graph:                                │
+│                                                                           │
+│   1. Check if MISSING                                                     │
+│      └─ Is mastery = 0 AND concept is prerequisite for current goals?     │
+│         → Flag as MISSING gap, priority = HIGH                            │
+│                                                                           │
+│   2. Check if PARTIAL                                                     │
+│      └─ Is mastery > 0 but < 70%?                                        │
+│         → Flag as PARTIAL gap, priority based on prerequisite depth       │
+│                                                                           │
+│   3. Check if FORGOTTEN                                                   │
+│      └─ Was mastery ≥ 70% but predicted retention now < 60%?             │
+│         → Flag as FORGOTTEN gap, calculate decay rate                     │
+│         → Schedule for review before critical threshold                   │
+│                                                                           │
+│   4. Check for MISCONCEPTION                                              │
+│      └─ Has learner:misconception:{conceptId} entries?                    │
+│         → Flag for targeted correction                                    │
+│         → Include counterexample teaching strategies                      │
+│                                                                           │
+│   Output: Prioritized gap list with remediation strategies                │
+└───────────────────────────────────────────────────────────────────────────┘`}</CodeBlock>
+
+              <div className="p-6 rounded-xl bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20">
+                <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                  <Heart className="w-5 h-5 text-green-500" />
+                  Why This Matters
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  Traditional education discovers gaps reactively—you fail a test, struggle with new material, or lose confidence. By then, the damage is done: you've built shaky foundations, developed misconceptions, and potentially lost motivation.
+                </p>
+                <p className="text-muted-foreground">
+                  <strong>LearnGraph is proactive.</strong> It continuously scans for gaps, predicts when you'll forget things, and intervenes before problems compound. It's the difference between a doctor who only sees you when you're sick versus one who catches problems early through regular checkups.
+                </p>
+              </div>
+            </div>
+          </Section>
+
+          {/* ZPD - ZONE OF PROXIMAL DEVELOPMENT */}
+          <Section id="zpd" title="Zone of Proximal Development: The Science of 'Just Right'" icon={Target}>
+            <div className="space-y-6">
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                In the 1930s, Soviet psychologist Lev Vygotsky discovered something profound: there's a "sweet spot" for learning—concepts that are challenging enough to grow your abilities but not so hard that you give up. He called this the <strong>Zone of Proximal Development</strong>.
+              </p>
+
+              <div className="p-6 rounded-xl border border-primary/20 bg-primary/5">
+                <p className="text-lg text-foreground font-medium mb-3">
+                  "What a learner can do with help today, they can do alone tomorrow."
+                </p>
+                <p className="text-sm text-muted-foreground">— Lev Vygotsky</p>
               </div>
 
-              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
-                <h4 className="font-semibold mb-2">4. Psychometric Adjustment</h4>
-                <p className="text-sm text-muted-foreground mb-2">Modifies readiness based on your profile:</p>
-                <Table
-                  headers={['Your Profile', 'Effect on Recommendations']}
-                  rows={[
-                    ['High anxiety', 'Lower readiness for difficult concepts'],
-                    ['High openness', 'Higher readiness for abstract concepts'],
-                    ['High conscientiousness', 'Ready for longer learning paths'],
-                    ['Low risk tolerance', 'Prefer well-structured concepts'],
-                  ]}
-                />
-              </div>
-
-              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
-                <h4 className="font-semibold mb-2">5. Zone Partitioning</h4>
-                <p className="text-sm text-muted-foreground mb-2">Concepts are sorted into zones:</p>
-                <CodeBlock>{`┌─────────────────────────────────────────────────────────────────────────┐
+              <CodeBlock title="Zone Partitioning">{`┌─────────────────────────────────────────────────────────────────────────┐
 │                                                                          │
 │    ┌───────────────────────────────────────────────────────────────┐    │
 │    │                                                               │    │
@@ -505,221 +701,417 @@ encouraging tone, builds on what they already know]`}</CodeBlock>
 │    │    │    │                                           │   │   │    │
 │    │    │    │     MASTERED CONCEPTS                     │   │   │    │
 │    │    │    │     (Can do independently)                │   │   │    │
-│    │    │    │     Readiness > 0.8                       │   │   │    │
+│    │    │    │     "I've got this"                       │   │   │    │
 │    │    │    │                                           │   │   │    │
 │    │    │    └───────────────────────────────────────────┘   │   │    │
 │    │    │                                                     │   │    │
 │    │    │         ZONE OF PROXIMAL DEVELOPMENT               │   │    │
 │    │    │         (Can learn with support)                   │   │    │
-│    │    │         Readiness 0.5 - 0.8  ← OPTIMAL TARGET      │   │    │
+│    │    │         "This is challenging but I can do it"      │   │    │
+│    │    │         ← THIS IS WHERE LEARNING HAPPENS           │   │    │
 │    │    │                                                     │   │    │
 │    │    └─────────────────────────────────────────────────────┘   │    │
 │    │                                                               │    │
 │    │              STRETCH ZONE                                     │    │
 │    │              (Challenging but achievable)                     │    │
-│    │              Readiness 0.3 - 0.5                              │    │
+│    │              "I need significant help here"                   │    │
 │    │                                                               │    │
 │    └───────────────────────────────────────────────────────────────┘    │
 │                                                                          │
-│                    TOO HARD (Missing prerequisites)                      │
-│                    Readiness < 0.3                                       │
+│                    FRUSTRATION ZONE                                      │
+│                    (Missing prerequisites)                               │
+│                    "I have no idea what's going on"                      │
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘`}</CodeBlock>
+
+              <h3 className="text-xl font-semibold mt-8 mb-4">How LearnGraph Computes Your ZPD</h3>
+
+              <div className="space-y-4">
+                <div className="p-4 rounded-lg border border-border/50 bg-card/50">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 rounded-full bg-primary/20 text-primary text-sm flex items-center justify-center font-semibold">1</div>
+                    <h4 className="font-semibold">Load Your Learner Profile</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground ml-11">
+                    All 39 psychometric dimensions are retrieved—your anxiety levels, learning preferences, cognitive style, risk tolerance, and more.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-lg border border-border/50 bg-card/50">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 rounded-full bg-primary/20 text-primary text-sm flex items-center justify-center font-semibold">2</div>
+                    <h4 className="font-semibold">Scan Your Knowledge State</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground ml-11">
+                    For every concept in the curriculum, check your mastery level, last access time, and predicted retention.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-lg border border-border/50 bg-card/50">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 rounded-full bg-primary/20 text-primary text-sm flex items-center justify-center font-semibold">3</div>
+                    <h4 className="font-semibold">Calculate Prerequisite Readiness</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground ml-11">
+                    For each unmastered concept, calculate what percentage of its prerequisites you've completed. This gives a raw "readiness score."
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-lg border border-border/50 bg-card/50">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 rounded-full bg-primary/20 text-primary text-sm flex items-center justify-center font-semibold">4</div>
+                    <h4 className="font-semibold">Apply Psychometric Adjustments</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground ml-11">
+                    Modify readiness based on your psychological profile. High anxiety? We lower readiness thresholds for difficult concepts. High openness? Abstract concepts get a readiness boost.
+                  </p>
+                  <div className="mt-3 ml-11">
+                    <Table
+                      headers={['If You Are...', 'Effect on Recommendations']}
+                      rows={[
+                        ['High anxiety (neuroticism)', 'More cautious progression, gentler challenges'],
+                        ['High openness', 'Faster access to abstract/novel concepts'],
+                        ['High conscientiousness', 'Longer learning paths are acceptable'],
+                        ['Low risk tolerance', 'Prefer well-structured, proven concepts first'],
+                        ['Visual learner', 'Prioritize concepts with diagram support'],
+                      ]}
+                    />
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg border border-border/50 bg-card/50">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 rounded-full bg-primary/20 text-primary text-sm flex items-center justify-center font-semibold">5</div>
+                    <h4 className="font-semibold">Partition Into Zones</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground ml-11">
+                    Concepts are sorted into zones based on adjusted readiness: Mastered (0.8+), ZPD (0.5-0.8), Stretch (0.3-0.5), Too Hard (&lt;0.3)
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-lg border border-green-500/50 bg-green-500/5">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 rounded-full bg-green-500/20 text-green-500 text-sm flex items-center justify-center font-semibold">6</div>
+                    <h4 className="font-semibold text-green-600">Return Optimal Learning Targets</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground ml-11">
+                    The ZPD concepts are your sweet spot—challenging enough to learn, achievable enough to succeed. These are what LearnGraph recommends when you ask "What should I learn next?"
+                  </p>
+                </div>
               </div>
 
-              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
-                <h4 className="font-semibold mb-2">6. Scaffolding Selection</h4>
-                <p className="text-sm text-muted-foreground mb-2">Based on your profile, selects support strategies:</p>
-                <Table
-                  headers={['If You Are...', 'Scaffolding Strategy']}
-                  rows={[
-                    ['Visual learner', 'VISUAL_REPRESENTATION - diagrams, charts'],
-                    ['High cognitive complexity', 'ANALOGY - connect to known concepts'],
-                    ['Low working memory', 'CHUNKING - break into smaller pieces'],
-                    ['High extraversion', 'PEER_DISCUSSION, COLLABORATIVE'],
-                    ['High conscientiousness', 'CHECKLIST, TEMPLATE'],
-                    ['Low self-esteem', 'WORKED_EXAMPLES, HINTS'],
-                  ]}
-                />
-              </div>
-
-              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
-                <h4 className="font-semibold mb-2">7. Path Generation</h4>
-                <p className="text-sm text-muted-foreground">Creates personalized learning path to your goals</p>
+              <div className="p-6 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 mt-8">
+                <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                  <Lightbulb className="w-5 h-5 text-amber-500" />
+                  Why This is Revolutionary
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  Most learning platforms recommend content based on what's "next" in a fixed sequence, or what's popular, or what the algorithm thinks might engage you. They don't actually know if you're <em>ready</em>.
+                </p>
+                <p className="text-muted-foreground">
+                  LearnGraph's ZPD engine ensures you're never bored (too easy) or overwhelmed (too hard). Every recommendation is personalized to your exact knowledge state AND your psychological profile. You stay in flow state—that magical zone where learning feels engaging rather than frustrating.
+                </p>
               </div>
             </div>
           </Section>
 
-          {/* 39 Psychological Domains */}
-          <Section id="domains" title="The 39 Psychological Domains" icon={Brain}>
-            <p className="text-muted-foreground mb-6">
-              LearnGraph tracks 39 research-backed psychological dimensions organized into 8 categories:
-            </p>
-
-            {/* Category A */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-3 text-indigo-500">Category A: Core Personality (Big Five) - NEO-PI-R Based</h3>
-              <Table
-                headers={['Domain ID', 'Trait', 'Educational Relevance']}
-                rows={[
-                  [<code key="1">big_five_openness</code>, 'Openness', 'Receptivity to novel concepts, abstract thinking'],
-                  [<code key="2">big_five_conscientiousness</code>, 'Conscientiousness', 'Self-discipline, goal persistence'],
-                  [<code key="3">big_five_extraversion</code>, 'Extraversion', 'Preference for collaborative vs. solo learning'],
-                  [<code key="4">big_five_agreeableness</code>, 'Agreeableness', 'Response to feedback, peer learning'],
-                  [<code key="5">big_five_neuroticism</code>, 'Neuroticism', 'Stress response, anxiety management needs'],
-                ]}
-              />
-            </div>
-
-            {/* Category B */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-3 text-purple-500">Category B: Dark Personality - SD3 Based</h3>
-              <Table
-                headers={['Domain ID', 'Trait', 'Educational Relevance']}
-                rows={[
-                  [<code key="1">dark_triad_narcissism</code>, 'Narcissism', 'Competitive learning, recognition needs'],
-                  [<code key="2">dark_triad_machiavellianism</code>, 'Machiavellianism', 'Strategic approach to goals'],
-                  [<code key="3">dark_triad_psychopathy</code>, 'Psychopathy', 'Risk-taking in learning challenges'],
-                ]}
-              />
-            </div>
-
-            {/* Category C */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-3 text-pink-500">Category C: Emotional/Social Intelligence</h3>
-              <Table
-                headers={['Domain ID', 'Trait', 'Educational Relevance']}
-                rows={[
-                  [<code key="1">emotional_empathy</code>, 'Empathy', 'Peer learning, perspective-taking'],
-                  [<code key="2">emotional_intelligence</code>, 'EQ', 'Self-regulation, emotional awareness'],
-                  [<code key="3">attachment_style</code>, 'Attachment', 'Trust in learning relationships'],
-                  [<code key="4">love_languages</code>, 'Love Languages', 'Preferred feedback/recognition style'],
-                  [<code key="5">communication_style</code>, 'Communication (DISC)', 'Interaction pattern preferences'],
-                ]}
-              />
-            </div>
-
-            {/* Category D */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-3 text-orange-500">Category D: Decision Making & Motivation</h3>
-              <Table
-                headers={['Domain ID', 'Trait', 'Educational Relevance']}
-                rows={[
-                  [<code key="1">risk_tolerance</code>, 'Risk Tolerance', 'Willingness to try new approaches'],
-                  [<code key="2">decision_style</code>, 'Decision Style', 'Rational vs. intuitive learning'],
-                  [<code key="3">time_orientation</code>, 'Time Orientation', 'Past, present, or future focus'],
-                  [<code key="4">achievement_motivation</code>, 'Achievement', 'Need for accomplishment, goal-setting'],
-                  [<code key="5">self_efficacy</code>, 'Self-Efficacy', 'Belief in own capabilities'],
-                  [<code key="6">locus_of_control</code>, 'Locus of Control', 'Internal vs. external attribution'],
-                  [<code key="7">growth_mindset</code>, 'Growth Mindset', 'Fixed vs. growth beliefs about ability'],
-                ]}
-              />
-            </div>
-
-            {/* Category E */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-3 text-green-500">Category E: Values & Wellbeing</h3>
-              <Table
-                headers={['Domain ID', 'Trait', 'Educational Relevance']}
-                rows={[
-                  [<code key="1">personal_values</code>, 'Values (Schwartz PVQ)', 'What content resonates'],
-                  [<code key="2">interests</code>, 'Interests (RIASEC)', 'Career/interest alignment'],
-                  [<code key="3">life_satisfaction</code>, 'Life Satisfaction', 'Overall engagement capacity'],
-                  [<code key="4">stress_coping</code>, 'Stress Coping', 'Response to learning challenges'],
-                  [<code key="5">social_support</code>, 'Social Support', 'Support network awareness'],
-                  [<code key="6">authenticity</code>, 'Authenticity', 'Alignment with true self'],
-                ]}
-              />
-            </div>
-
-            {/* Category F */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-3 text-blue-500">Category F: Cognitive/Learning Styles</h3>
-              <Table
-                headers={['Domain ID', 'Trait', 'Educational Relevance']}
-                rows={[
-                  [<code key="1">cognitive_abilities</code>, 'Cognitive Style', 'Verbal, numerical, spatial preferences'],
-                  [<code key="2">creativity</code>, 'Creativity', 'Divergent thinking, originality'],
-                  [<code key="3">learning_styles</code>, 'Learning Styles (VARK)', 'Visual, auditory, reading, kinesthetic'],
-                  [<code key="4">information_processing</code>, 'Info Processing', 'Deep vs. shallow processing'],
-                  [<code key="5">metacognition</code>, 'Metacognition', 'Awareness of own thinking'],
-                  [<code key="6">executive_functions</code>, 'Executive Functions', 'Planning, inhibition, flexibility'],
-                ]}
-              />
-            </div>
-
-            {/* Category G */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-3 text-teal-500">Category G: Social/Cultural Values</h3>
-              <Table
-                headers={['Domain ID', 'Trait', 'Educational Relevance']}
-                rows={[
-                  [<code key="1">social_cognition</code>, 'Social Cognition', 'Theory of mind, perspective-taking'],
-                  [<code key="2">political_ideology</code>, 'Political Values', 'Worldview influence on learning'],
-                  [<code key="3">cultural_values</code>, 'Cultural Values (Hofstede)', 'Individualism, power distance'],
-                  [<code key="4">moral_reasoning</code>, 'Moral Reasoning (MFQ)', 'Ethical framework preferences'],
-                  [<code key="5">work_career_style</code>, 'Career Style', 'Work values, career anchors'],
-                ]}
-              />
-            </div>
-
-            {/* Category H */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-3 text-amber-500">Category H: Sensory/Aesthetic</h3>
-              <Table
-                headers={['Domain ID', 'Trait', 'Educational Relevance']}
-                rows={[
-                  [<code key="1">sensory_processing</code>, 'Sensory Sensitivity (HSP)', 'Stimulation tolerance'],
-                  [<code key="2">aesthetic_preferences</code>, 'Aesthetic Preferences', 'Design/presentation preferences'],
-                ]}
-              />
-            </div>
-          </Section>
-
-          {/* Gap Detection */}
-          <Section id="gaps" title="Knowledge Gap Detection" icon={AlertTriangle}>
-            <p className="text-muted-foreground mb-4">
-              LearnGraph continuously monitors for four types of knowledge gaps:
-            </p>
-            <CodeBlock title="Gap Detection Engine">{`┌───────────────────────────────────────────────────────────────────────────┐
-│                        GAP DETECTION ENGINE                                │
-│                                                                           │
-│   ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────┐  │
-│   │    MISSING      │  │    PARTIAL      │  │      FORGOTTEN          │  │
-│   │                 │  │                 │  │                         │  │
-│   │  Never learned  │  │  Started but    │  │  Was mastered but       │  │
-│   │  this concept   │  │  not mastered   │  │  memory has decayed     │  │
-│   │                 │  │  (< 70%)        │  │                         │  │
-│   │  Action:        │  │  Action:        │  │  Action:                │  │
-│   │  Full teaching  │  │  Reinforcement  │  │  Quick refresh          │  │
-│   └─────────────────┘  └─────────────────┘  └─────────────────────────┘  │
-│                                                                           │
-│                        ┌─────────────────────────┐                        │
-│                        │     MISCONCEPTION       │                        │
-│                        │                         │                        │
-│                        │  Wrong mental model     │                        │
-│                        │  needs correction       │                        │
-│                        │                         │                        │
-│                        │  Action:                │                        │
-│                        │  Targeted correction    │                        │
-│                        │  with counterexamples   │                        │
-│                        └─────────────────────────┘                        │
-│                                                                           │
-└───────────────────────────────────────────────────────────────────────────┘`}</CodeBlock>
-          </Section>
-
-          {/* Forgetting Curve */}
-          <Section id="forgetting" title="Forgetting Curve (Ebbinghaus)" icon={TrendingUp}>
-            <p className="text-muted-foreground mb-4">
-              LearnGraph predicts memory decay using the Ebbinghaus forgetting curve:
-            </p>
-            <div className="p-4 rounded-lg border border-border/50 bg-card/50 mb-4">
-              <code className="text-lg">Retention = e^(-t/S) × 100%</code>
-              <p className="text-sm text-muted-foreground mt-2">
-                Where: <strong>t</strong> = days since last access, <strong>S</strong> = stability (increases with repetitions and mastery)
+          {/* 39 PSYCHOLOGICAL DOMAINS */}
+          <Section id="domains" title="39 Psychological Domains: Understanding The Whole Learner" icon={Brain}>
+            <div className="space-y-6">
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                Every learner is different. Not just in what they know, but in <em>how they think</em>, <em>how they feel about learning</em>, <em>how they process information</em>, and <em>what motivates them</em>. LearnGraph captures this through 39 research-backed psychological dimensions.
               </p>
+
+              <div className="p-6 rounded-xl border border-primary/20 bg-primary/5">
+                <h3 className="font-semibold text-lg mb-3">Why Track 39 Dimensions?</h3>
+                <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                  <div>
+                    <p className="mb-2">
+                      <strong>Personalized Teaching Strategies:</strong> A visual learner with high anxiety needs diagrams presented gently. An analytical learner with high confidence can handle abstract proofs directly.
+                    </p>
+                    <p>
+                      <strong>Accurate Readiness Assessment:</strong> Your openness to new ideas affects how quickly you can tackle abstract concepts. Your conscientiousness affects whether you can stick with long learning paths.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="mb-2">
+                      <strong>Better Scaffolding Selection:</strong> High extraversion? You'll benefit from peer discussion scaffolds. Low working memory? Content should be chunked into smaller pieces.
+                    </p>
+                    <p>
+                      <strong>Emotional Awareness:</strong> Learning isn't purely cognitive. Stress, motivation, self-efficacy—these affect learning outcomes dramatically.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <h3 className="text-xl font-semibold mt-8 mb-4">The 8 Categories</h3>
+
+              <div className="space-y-6">
+                {/* Category A */}
+                <div className="p-5 rounded-xl border border-indigo-500/20 bg-indigo-500/5">
+                  <h4 className="font-semibold text-lg text-indigo-500 mb-3">A. Core Personality (Big Five)</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    The gold standard in personality psychology. These five traits predict everything from academic success to learning preferences.
+                  </p>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
+                    <div className="p-2 rounded bg-background/50"><code>big_five_openness</code> — Curiosity, creativity, abstract thinking</div>
+                    <div className="p-2 rounded bg-background/50"><code>big_five_conscientiousness</code> — Self-discipline, persistence</div>
+                    <div className="p-2 rounded bg-background/50"><code>big_five_extraversion</code> — Solo vs. social learning</div>
+                    <div className="p-2 rounded bg-background/50"><code>big_five_agreeableness</code> — Response to feedback</div>
+                    <div className="p-2 rounded bg-background/50"><code>big_five_neuroticism</code> — Anxiety, stress response</div>
+                  </div>
+                </div>
+
+                {/* Category B */}
+                <div className="p-5 rounded-xl border border-purple-500/20 bg-purple-500/5">
+                  <h4 className="font-semibold text-lg text-purple-500 mb-3">B. Dark Personality (SD3)</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Not "evil" traits—just traits that affect competitive learning and risk-taking.
+                  </p>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
+                    <div className="p-2 rounded bg-background/50"><code>dark_triad_narcissism</code> — Recognition needs</div>
+                    <div className="p-2 rounded bg-background/50"><code>dark_triad_machiavellianism</code> — Strategic thinking</div>
+                    <div className="p-2 rounded bg-background/50"><code>dark_triad_psychopathy</code> — Risk tolerance</div>
+                  </div>
+                </div>
+
+                {/* Category C */}
+                <div className="p-5 rounded-xl border border-pink-500/20 bg-pink-500/5">
+                  <h4 className="font-semibold text-lg text-pink-500 mb-3">C. Emotional/Social Intelligence</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    How you relate to others and regulate your emotions during learning.
+                  </p>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
+                    <div className="p-2 rounded bg-background/50"><code>emotional_empathy</code> — Peer learning</div>
+                    <div className="p-2 rounded bg-background/50"><code>emotional_intelligence</code> — Self-regulation</div>
+                    <div className="p-2 rounded bg-background/50"><code>attachment_style</code> — Trust in relationships</div>
+                    <div className="p-2 rounded bg-background/50"><code>love_languages</code> — Feedback preferences</div>
+                    <div className="p-2 rounded bg-background/50"><code>communication_style</code> — DISC profile</div>
+                  </div>
+                </div>
+
+                {/* Category D */}
+                <div className="p-5 rounded-xl border border-orange-500/20 bg-orange-500/5">
+                  <h4 className="font-semibold text-lg text-orange-500 mb-3">D. Decision Making & Motivation</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    What drives you and how you make choices about learning.
+                  </p>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
+                    <div className="p-2 rounded bg-background/50"><code>risk_tolerance</code> — New approaches</div>
+                    <div className="p-2 rounded bg-background/50"><code>decision_style</code> — Rational vs. intuitive</div>
+                    <div className="p-2 rounded bg-background/50"><code>time_orientation</code> — Past/present/future</div>
+                    <div className="p-2 rounded bg-background/50"><code>achievement_motivation</code> — Goal-setting</div>
+                    <div className="p-2 rounded bg-background/50"><code>self_efficacy</code> — Belief in capabilities</div>
+                    <div className="p-2 rounded bg-background/50"><code>locus_of_control</code> — Internal vs. external</div>
+                    <div className="p-2 rounded bg-background/50"><code>growth_mindset</code> — Fixed vs. growth</div>
+                  </div>
+                </div>
+
+                {/* Category E */}
+                <div className="p-5 rounded-xl border border-green-500/20 bg-green-500/5">
+                  <h4 className="font-semibold text-lg text-green-500 mb-3">E. Values & Wellbeing</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Your values affect what content resonates and how you handle challenges.
+                  </p>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
+                    <div className="p-2 rounded bg-background/50"><code>personal_values</code> — Schwartz PVQ</div>
+                    <div className="p-2 rounded bg-background/50"><code>interests</code> — RIASEC profile</div>
+                    <div className="p-2 rounded bg-background/50"><code>life_satisfaction</code> — Engagement capacity</div>
+                    <div className="p-2 rounded bg-background/50"><code>stress_coping</code> — Challenge response</div>
+                    <div className="p-2 rounded bg-background/50"><code>social_support</code> — Support network</div>
+                    <div className="p-2 rounded bg-background/50"><code>authenticity</code> — True self alignment</div>
+                  </div>
+                </div>
+
+                {/* Category F */}
+                <div className="p-5 rounded-xl border border-blue-500/20 bg-blue-500/5">
+                  <h4 className="font-semibold text-lg text-blue-500 mb-3">F. Cognitive/Learning Styles</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    How you actually process and retain information.
+                  </p>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
+                    <div className="p-2 rounded bg-background/50"><code>cognitive_abilities</code> — Verbal/numerical/spatial</div>
+                    <div className="p-2 rounded bg-background/50"><code>creativity</code> — Divergent thinking</div>
+                    <div className="p-2 rounded bg-background/50"><code>learning_styles</code> — VARK model</div>
+                    <div className="p-2 rounded bg-background/50"><code>information_processing</code> — Deep vs. shallow</div>
+                    <div className="p-2 rounded bg-background/50"><code>metacognition</code> — Thinking about thinking</div>
+                    <div className="p-2 rounded bg-background/50"><code>executive_functions</code> — Planning, flexibility</div>
+                  </div>
+                </div>
+
+                {/* Category G */}
+                <div className="p-5 rounded-xl border border-teal-500/20 bg-teal-500/5">
+                  <h4 className="font-semibold text-lg text-teal-500 mb-3">G. Social/Cultural Values</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Cultural context affects how you learn and what examples resonate.
+                  </p>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
+                    <div className="p-2 rounded bg-background/50"><code>social_cognition</code> — Theory of mind</div>
+                    <div className="p-2 rounded bg-background/50"><code>political_ideology</code> — Worldview</div>
+                    <div className="p-2 rounded bg-background/50"><code>cultural_values</code> — Hofstede dimensions</div>
+                    <div className="p-2 rounded bg-background/50"><code>moral_reasoning</code> — MFQ profile</div>
+                    <div className="p-2 rounded bg-background/50"><code>work_career_style</code> — Career anchors</div>
+                  </div>
+                </div>
+
+                {/* Category H */}
+                <div className="p-5 rounded-xl border border-amber-500/20 bg-amber-500/5">
+                  <h4 className="font-semibold text-lg text-amber-500 mb-3">H. Sensory/Aesthetic</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    How you respond to stimulation and presentation affects content delivery.
+                  </p>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
+                    <div className="p-2 rounded bg-background/50"><code>sensory_processing</code> — HSP sensitivity</div>
+                    <div className="p-2 rounded bg-background/50"><code>aesthetic_preferences</code> — Design preferences</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 rounded-xl bg-gradient-to-r from-primary/10 to-purple-500/10 border border-primary/20 mt-8">
+                <h3 className="font-semibold text-lg mb-3">How LearnGraph Uses This Data</h3>
+                <p className="text-muted-foreground mb-4">
+                  Every time LearnGraph makes a recommendation or generates context for an AI tutor, it considers relevant psychological dimensions:
+                </p>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2">
+                    <ChevronRight className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                    <span><strong>High neuroticism + difficult concept</strong> → Lower readiness score, recommend easier prerequisite first</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <ChevronRight className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                    <span><strong>Visual learner + abstract concept</strong> → Add VISUAL_REPRESENTATION scaffolding strategy</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <ChevronRight className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                    <span><strong>Low self-efficacy</strong> → Include WORKED_EXAMPLES and gentle encouragement in AI context</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <ChevronRight className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                    <span><strong>High extraversion</strong> → Recommend PEER_DISCUSSION and COLLABORATIVE activities</span>
+                  </li>
+                </ul>
+              </div>
             </div>
-            <CodeBlock title="Memory Decay Over Time">{`100% ┤████████████████████████████████████████████████████████████
+          </Section>
+
+          {/* SCAFFOLDING STRATEGIES */}
+          <Section id="scaffolding" title="Personalized Scaffolding: Teaching You The Way You Learn" icon={Puzzle}>
+            <div className="space-y-6">
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                A brilliant explanation that works for one learner might completely confuse another. LearnGraph doesn't just tell you <em>what</em> to learn—it customizes <em>how</em> you'll learn it based on your psychological profile.
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="p-6 rounded-xl border border-border/50 bg-card/50">
+                  <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                    <Brain className="w-5 h-5 text-indigo-500" />
+                    Cognitive Scaffolds
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">Help you process and understand new information.</p>
+                  <ul className="space-y-3 text-sm">
+                    <li className="flex items-start gap-2">
+                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded shrink-0">CHUNKING</code>
+                      <span className="text-muted-foreground">Break content into smaller, digestible pieces (for low working memory)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded shrink-0">ANALOGY</code>
+                      <span className="text-muted-foreground">Connect new concepts to things you already know</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded shrink-0">VISUAL_REPRESENTATION</code>
+                      <span className="text-muted-foreground">Diagrams, charts, concept maps (for visual learners)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded shrink-0">WORKED_EXAMPLES</code>
+                      <span className="text-muted-foreground">Step-by-step demonstrations (for beginners)</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="p-6 rounded-xl border border-border/50 bg-card/50">
+                  <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                    <Lightbulb className="w-5 h-5 text-amber-500" />
+                    Metacognitive Scaffolds
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">Help you think about your own learning.</p>
+                  <ul className="space-y-3 text-sm">
+                    <li className="flex items-start gap-2">
+                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded shrink-0">SELF_EXPLANATION</code>
+                      <span className="text-muted-foreground">Prompt you to explain your reasoning (builds understanding)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded shrink-0">PREDICTION</code>
+                      <span className="text-muted-foreground">"What do you think happens next?" (builds engagement)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded shrink-0">REFLECTION</code>
+                      <span className="text-muted-foreground">"What did you learn?" (consolidates knowledge)</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="p-6 rounded-xl border border-border/50 bg-card/50">
+                  <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                    <ClipboardList className="w-5 h-5 text-emerald-500" />
+                    Procedural Scaffolds
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">Provide structure for how to approach learning.</p>
+                  <ul className="space-y-3 text-sm">
+                    <li className="flex items-start gap-2">
+                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded shrink-0">CHECKLIST</code>
+                      <span className="text-muted-foreground">Step-by-step guides (for high conscientiousness)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded shrink-0">TEMPLATE</code>
+                      <span className="text-muted-foreground">Fill-in-the-blank frameworks (for structure-seekers)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded shrink-0">HINTS</code>
+                      <span className="text-muted-foreground">Progressive hints revealed one at a time</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="p-6 rounded-xl border border-border/50 bg-card/50">
+                  <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-pink-500" />
+                    Social Scaffolds
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">Leverage social interaction for learning.</p>
+                  <ul className="space-y-3 text-sm">
+                    <li className="flex items-start gap-2">
+                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded shrink-0">PEER_DISCUSSION</code>
+                      <span className="text-muted-foreground">Discussion prompts (for extraverts)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded shrink-0">EXPERT_MODELING</code>
+                      <span className="text-muted-foreground">Watch expert demonstrations</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded shrink-0">COLLABORATIVE</code>
+                      <span className="text-muted-foreground">Pair/group activities</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="p-6 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20">
+                <h3 className="font-semibold text-lg mb-3">Automatic Scaffolding Selection</h3>
+                <p className="text-muted-foreground text-sm">
+                  When LearnGraph generates a learning recommendation or RAG context, it automatically includes appropriate scaffolding strategies based on your profile. For example, if you're a visual learner with low confidence approaching a difficult concept, the AI tutor receives: "Use VISUAL_REPRESENTATION and WORKED_EXAMPLES scaffolds. Present gently with encouragement."
+                </p>
+              </div>
+            </div>
+          </Section>
+
+          {/* FIGHTING FORGETTING */}
+          <Section id="forgetting" title="Fighting Forgetting: The Science of Retention" icon={Clock}>
+            <div className="space-y-6">
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                In 1885, German psychologist Hermann Ebbinghaus discovered something that explains why you forget 80% of what you learn within a month. His "forgetting curve" shows that memory decays exponentially—but <em>can be reset with strategic reviews</em>.
+              </p>
+
+              <CodeBlock title="The Forgetting Curve (Ebbinghaus)">{`100% ┤████████████████████████████████████████████████████████████
      │███████████████
  80% ┤              ████████████
      │                         █████████
@@ -732,15 +1124,23 @@ encouraging tone, builds on what they already know]`}</CodeBlock>
   0% ┼───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬───→
      0       1       3       7      14      21      28      45      60   Days
 
-     ↑ Review here maintains 90% retention`}</CodeBlock>
-          </Section>
+     ↑ Review HERE maintains 90% retention`}</CodeBlock>
 
-          {/* Spaced Repetition */}
-          <Section id="spaced-repetition" title="Spaced Repetition (SM-2 Algorithm)" icon={RefreshCw}>
-            <p className="text-muted-foreground mb-4">
-              Reviews are scheduled to catch concepts just before they decay below 90% retention:
-            </p>
-            <CodeBlock title="Spaced Repetition Schedule">{`┌────────────────────────────────────────────────────────────────────────┐
+              <div className="p-6 rounded-xl border border-primary/20 bg-primary/5">
+                <h3 className="font-semibold text-lg mb-3">The Formula</h3>
+                <code className="text-lg block mb-3">Retention = e^(-t/S) × 100%</code>
+                <p className="text-sm text-muted-foreground">
+                  Where <strong>t</strong> = days since last review, and <strong>S</strong> = stability (increases with each successful review and with mastery level).
+                </p>
+              </div>
+
+              <h3 className="text-xl font-semibold mt-8 mb-4">Spaced Repetition: The SM-2 Algorithm</h3>
+
+              <p className="text-muted-foreground mb-4">
+                LearnGraph uses the SM-2 algorithm (the same algorithm behind Anki) to schedule reviews at precisely the right time—just before you forget.
+              </p>
+
+              <CodeBlock title="Spaced Repetition Schedule">{`┌────────────────────────────────────────────────────────────────────────┐
 │                    SPACED REPETITION SCHEDULE                          │
 │                                                                        │
 │   Initial Learning                                                     │
@@ -770,1002 +1170,498 @@ encouraging tone, builds on what they already know]`}</CodeBlock>
 │   │ Day 25  │  Fourth review (if remembered → next in 30 days)         │
 │   └─────────┘                                                          │
 │                                                                        │
-│   Interval grows exponentially with successful reviews                 │
-│   Resets to shorter interval if forgotten                              │
+│   Interval GROWS exponentially with successful reviews                 │
+│   Interval RESETS to short interval if you forget                      │
 │                                                                        │
 └────────────────────────────────────────────────────────────────────────┘`}</CodeBlock>
+
+              <div className="p-6 rounded-xl bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20">
+                <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-blue-500" />
+                  Why This Matters
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  Without spaced repetition, you spend most of your time relearning things you've forgotten. Studies show spaced repetition can <strong>reduce learning time by up to 50%</strong> while improving long-term retention by up to 200%.
+                </p>
+                <p className="text-muted-foreground">
+                  LearnGraph automatically calculates when you're about to forget each concept and adds it to your review queue. You don't have to manage flashcard decks or remember to review—the system handles it all.
+                </p>
+              </div>
+            </div>
           </Section>
 
-          {/* Bloom's Taxonomy */}
-          <Section id="blooms" title="Bloom's Taxonomy Integration" icon={Layers}>
-            <p className="text-muted-foreground mb-4">
-              Each concept is mapped across six cognitive levels:
-            </p>
-            <CodeBlock title="Bloom's Taxonomy Levels">{`┌─────────────────────────────────────────────────────────────────────────┐
-│                        BLOOM'S TAXONOMY                                  │
-│                                                                          │
-│     Level 6: CREATE                                                      │
-│     ┌─────────────────────────────────────────────────────────────────┐ │
-│     │ Design, construct, develop, formulate, synthesize                │ │
-│     │ Example: "Model a real-world situation with linear equations"    │ │
-│     └─────────────────────────────────────────────────────────────────┘ │
-│                                    ▲                                     │
-│     Level 5: EVALUATE                                                    │
-│     ┌─────────────────────────────────────────────────────────────────┐ │
-│     │ Evaluate, critique, justify, assess, defend, judge               │ │
-│     │ Example: "Choose the best method for solving this system"        │ │
-│     └─────────────────────────────────────────────────────────────────┘ │
-│                                    ▲                                     │
-│     Level 4: ANALYZE                                                     │
-│     ┌─────────────────────────────────────────────────────────────────┐ │
-│     │ Analyze, differentiate, organize, deconstruct, attribute         │ │
-│     │ Example: "Determine if this equation is linear"                  │ │
-│     └─────────────────────────────────────────────────────────────────┘ │
-│                                    ▲                                     │
-│     Level 3: APPLY                                                       │
-│     ┌─────────────────────────────────────────────────────────────────┐ │
-│     │ Apply, demonstrate, solve, use, implement, execute               │ │
-│     │ Example: "Solve 3x + 5 = 20"                                     │ │
-│     └─────────────────────────────────────────────────────────────────┘ │
-│                                    ▲                                     │
-│     Level 2: UNDERSTAND                                                  │
-│     ┌─────────────────────────────────────────────────────────────────┐ │
-│     │ Explain, describe, interpret, summarize, classify, compare       │ │
-│     │ Example: "Explain why the graph is a straight line"              │ │
-│     └─────────────────────────────────────────────────────────────────┘ │
-│                                    ▲                                     │
-│     Level 1: REMEMBER                                                    │
-│     ┌─────────────────────────────────────────────────────────────────┐ │
-│     │ Define, list, recall, identify, name, recognize, reproduce       │ │
-│     │ Example: "Define what a linear equation is"                      │ │
-│     └─────────────────────────────────────────────────────────────────┘ │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘`}</CodeBlock>
-            <p className="text-muted-foreground mt-4">
-              LearnGraph tracks which Bloom level you've achieved for each concept:
-            </p>
-            <ul className="list-disc list-inside text-muted-foreground">
-              <li><strong>Current Level:</strong> What you can do now</li>
-              <li><strong>Target Level:</strong> What you're working toward</li>
-              <li><strong>Progression:</strong> Moving up requires mastering lower levels first</li>
-            </ul>
-          </Section>
-
-          {/* Scaffolding Strategies */}
-          <Section id="scaffolding" title="Scaffolding Strategies" icon={Puzzle}>
-            <p className="text-muted-foreground mb-6">
-              Based on your psychometric profile, LearnGraph selects appropriate scaffolding:
-            </p>
-
-            <h3 className="text-lg font-semibold mb-3">Cognitive Scaffolds</h3>
-            <Table
-              headers={['Strategy', 'When Used', 'Implementation']}
-              rows={[
-                [<code key="1">CHUNKING</code>, 'Low working memory', 'Break content into smaller pieces'],
-                [<code key="2">ANALOGY</code>, 'High cognitive complexity', 'Connect to familiar concepts'],
-                [<code key="3">WORKED_EXAMPLES</code>, 'Low confidence, beginners', 'Step-by-step demonstrations'],
-                [<code key="4">VISUAL_REPRESENTATION</code>, 'Visual learners', 'Diagrams, charts, concept maps'],
-              ]}
-            />
-
-            <h3 className="text-lg font-semibold mb-3 mt-6">Metacognitive Scaffolds</h3>
-            <Table
-              headers={['Strategy', 'When Used', 'Implementation']}
-              rows={[
-                [<code key="1">SELF_EXPLANATION</code>, 'High analytical thinking', 'Prompt to explain reasoning'],
-                [<code key="2">PREDICTION</code>, 'Engagement building', '"What do you think happens?"'],
-                [<code key="3">REFLECTION</code>, 'Consolidation', '"What did you learn?"'],
-              ]}
-            />
-
-            <h3 className="text-lg font-semibold mb-3 mt-6">Procedural Scaffolds</h3>
-            <Table
-              headers={['Strategy', 'When Used', 'Implementation']}
-              rows={[
-                [<code key="1">CHECKLIST</code>, 'High conscientiousness', 'Step-by-step guides'],
-                [<code key="2">TEMPLATE</code>, 'Structure-seekers', 'Fill-in-the-blank frameworks'],
-                [<code key="3">HINTS</code>, 'Progressive support', 'Reveal hints one at a time'],
-              ]}
-            />
-
-            <h3 className="text-lg font-semibold mb-3 mt-6">Social Scaffolds</h3>
-            <Table
-              headers={['Strategy', 'When Used', 'Implementation']}
-              rows={[
-                [<code key="1">PEER_DISCUSSION</code>, 'High extraversion', 'Discussion prompts'],
-                [<code key="2">EXPERT_MODELING</code>, 'Visual/auditory learners', 'Watch expert demonstrations'],
-                [<code key="3">COLLABORATIVE</code>, 'Group-oriented learners', 'Pair/group activities'],
-              ]}
-            />
-          </Section>
-
-          {/* Data Architecture */}
-          <Section id="data-architecture" title="Data Architecture" icon={Database}>
-            <p className="text-muted-foreground mb-4">
-              LearnGraph uses LevelDB with a key-prefix schema for fast, typed access:
-            </p>
-            <CodeBlock title="LevelDB Storage Schema">{`┌──────────────────────────────────────────────────────────────────────────┐
-│                          LEVELDB STORAGE                                  │
-│                                                                          │
-│  ┌────────────────────────────────────────────────────────────────────┐ │
-│  │                    LEARNER MODEL KEYS                               │ │
-│  │                                                                     │ │
-│  │  learner:{userId}:profile              → Core psychometric profile  │ │
-│  │  learner:{userId}:domain:{domainName}  → Individual domain scores   │ │
-│  │  learner:{userId}:knowledge:{conceptId}→ Mastery level per concept  │ │
-│  │  learner:{userId}:history:{timestamp}  → Learning session history   │ │
-│  │  learner:{userId}:misconception:{id}   → Tracked misconceptions     │ │
-│  │  learner:{userId}:zpd:current          → Current ZPD snapshot       │ │
-│  └────────────────────────────────────────────────────────────────────┘ │
-│                                                                          │
-│  ┌────────────────────────────────────────────────────────────────────┐ │
-│  │                    KNOWLEDGE MODEL KEYS                             │ │
-│  │                                                                     │ │
-│  │  knowledge:concept:{conceptId}         → Concept node data          │ │
-│  │  knowledge:edge:prerequisite:{from}:{to} → Prerequisite edges       │ │
-│  │  knowledge:edge:related:{from}:{to}    → Related concept edges      │ │
-│  │  knowledge:bloom:{conceptId}:{level}   → Bloom's taxonomy mapping   │ │
-│  │  knowledge:difficulty:{conceptId}      → Difficulty rating          │ │
-│  │  knowledge:scaffold:{conceptId}        → Scaffolding strategies     │ │
-│  └────────────────────────────────────────────────────────────────────┘ │
-│                                                                          │
-│  ┌────────────────────────────────────────────────────────────────────┐ │
-│  │                    INDEX KEYS (Fast Lookups)                        │ │
-│  │                                                                     │ │
-│  │  index:concept:by-difficulty:{level}:{id}                           │ │
-│  │  index:concept:by-bloom:{level}:{id}                                │ │
-│  │  index:concept:by-domain:{domain}:{id}                              │ │
-│  │  index:user:by-gap:{conceptId}:{userId}                             │ │
-│  └────────────────────────────────────────────────────────────────────┘ │
-│                                                                          │
-│  Performance:                                                            │
-│  • Single write: < 5ms                                                   │
-│  • Single read: < 2ms                                                    │
-│  • Batch throughput: > 2,000 ops/sec                                     │
-│  • Data persistence: 100% across restarts                                │
-│                                                                          │
-└──────────────────────────────────────────────────────────────────────────┘`}</CodeBlock>
-          </Section>
-
-          {/* RAG Context */}
-          <Section id="rag-context" title="RAG Context Generation" icon={MessageSquare}>
-            <p className="text-muted-foreground mb-4">
-              When an LLM needs context about a learner, LearnGraph generates optimized RAG context:
-            </p>
-            <CodeBlock title="RAG Context Interface (TypeScript)">{`interface RAGContext {
-  // Who is this learner?
-  learnerProfile: {
-    learningStyle: 'visual' | 'auditory' | 'kinesthetic' | 'reading';
-    socialPreference: 'solo' | 'collaborative' | 'mixed';
-    cognitiveProfile: {
-      workingMemoryEstimate: number;
-      attentionSpan: number;
-      complexityTolerance: number;
-    };
-  };
-
-  // What do they know?
-  relevantKnowledgeStates: {
-    conceptId: string;
-    mastery: number;
-    bloomLevel: number;
-    lastAccessed: Date;
-  }[];
-
-  // What should they learn?
-  zpd: {
-    optimalConcepts: string[];
-    scaffoldingNeeded: string[];
-  };
-
-  // What are they getting wrong?
-  misconceptions: {
-    concept: string;
-    description: string;
-    severity: 'minor' | 'moderate' | 'blocking';
-  }[];
-
-  // How should we teach them?
-  recommendedScaffolding: ScaffoldingStrategy[];
-}`}</CodeBlock>
-            <p className="text-sm text-muted-foreground mt-4">
-              <strong>Token Budget:</strong> &lt; 2000 tokens to leave room for the response
-            </p>
-          </Section>
-
-          {/* Comparison */}
+          {/* COMPARISON TABLE */}
           <Section id="comparison" title="Traditional Assessment vs. LearnGraph" icon={Scale}>
-            <Table
-              headers={['Aspect', 'Traditional LMS', 'LearnGraph']}
-              rows={[
-                ['Personalization', 'Same content for everyone', 'Adapts to 39 psychological dimensions'],
-                ['Recommendations', 'Fixed curriculum order', 'Dynamic ZPD-based paths'],
-                ['Gap Detection', 'Manual quizzes only', 'Continuous monitoring + decay prediction'],
-                ['Scaffolding', 'One-size-fits-all', 'Profile-matched strategies'],
-                ['Review Scheduling', 'Manual or none', 'Automated spaced repetition'],
-                ['AI Integration', 'Generic responses', 'Context-rich personalized tutoring'],
-                ['Prerequisites', 'Course sequences', 'Concept-level graph relationships'],
-                ['Progress Tracking', 'Completion % only', 'Bloom level + mastery + decay'],
-              ]}
-            />
+            <div className="space-y-6">
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                Traditional education and LearnGraph represent fundamentally different philosophies about how learning should work.
+              </p>
+
+              <Table
+                headers={['Aspect', 'Traditional', 'LearnGraph']}
+                rows={[
+                  [
+                    <strong key="1">When gaps are discovered</strong>,
+                    'After you fail a test',
+                    'Continuously, before they become problems'
+                  ],
+                  [
+                    <strong key="2">Forgetting</strong>,
+                    'Ignored—re-learn when needed',
+                    'Predicted and prevented with spaced repetition'
+                  ],
+                  [
+                    <strong key="3">Personalization</strong>,
+                    'Same pace, style, sequence for everyone',
+                    'Unique to your psychology and knowledge state'
+                  ],
+                  [
+                    <strong key="4">Difficulty calibration</strong>,
+                    'Fixed curriculum sequence',
+                    'Dynamic ZPD—always in your learning sweet spot'
+                  ],
+                  [
+                    <strong key="5">Teaching approach</strong>,
+                    'One style fits all',
+                    'Scaffolding selected based on how you learn'
+                  ],
+                  [
+                    <strong key="6">Misconception handling</strong>,
+                    'Discovered through wrong answers',
+                    'Tracked and targeted for correction'
+                  ],
+                  [
+                    <strong key="7">Privacy</strong>,
+                    'Your data on their servers',
+                    '100% on-device, never leaves your browser'
+                  ],
+                  [
+                    <strong key="8">Learning analytics</strong>,
+                    'Class averages, simple completion rates',
+                    '39 psychological dimensions + knowledge graph'
+                  ],
+                  [
+                    <strong key="9">AI tutoring</strong>,
+                    'Generic responses',
+                    'Rich context about YOU for every interaction'
+                  ],
+                  [
+                    <strong key="10">Flexibility</strong>,
+                    'Fixed curriculum structure',
+                    'Any knowledge domain, any structure'
+                  ],
+                ]}
+              />
+
+              <div className="p-6 rounded-xl bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20">
+                <h3 className="font-semibold text-lg mb-3">The Bottom Line</h3>
+                <p className="text-muted-foreground">
+                  Traditional systems treat learners as passive recipients of a fixed curriculum. LearnGraph treats you as a unique individual with specific needs, preferences, and a continuously evolving knowledge state. It's the difference between mass production and personalized craftsmanship.
+                </p>
+              </div>
+            </div>
           </Section>
 
-          {/* Who Benefits */}
-          <Section id="who-benefits" title="Who Benefits?" icon={Users}>
+          {/* WHO BENEFITS */}
+          <Section id="who-benefits" title="Who Benefits From LearnGraph?" icon={Users}>
             <div className="grid md:grid-cols-2 gap-6">
               <div className="p-6 rounded-xl border border-border/50 bg-card/50">
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <GraduationCap className="w-5 h-5 text-primary" />
-                  For Learners
-                </h3>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>• Get AI tutoring that actually knows you</li>
-                  <li>• Never waste time on too-easy or too-hard content</li>
-                  <li>• Automatically review at optimal times</li>
-                  <li>• Receive explanations matched to your learning style</li>
-                </ul>
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mb-4">
+                  <GraduationCap className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">Self-Directed Learners</h3>
+                <p className="text-sm text-muted-foreground">
+                  Finally, an AI tutor that actually understands you. Stop getting generic advice and start getting recommendations based on your real knowledge state and learning style.
+                </p>
               </div>
 
               <div className="p-6 rounded-xl border border-border/50 bg-card/50">
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-primary" />
-                  For Educators
-                </h3>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>• Understand each student's psychometric profile</li>
-                  <li>• See knowledge gaps across your class</li>
-                  <li>• Get AI teaching assistant that adapts to students</li>
-                  <li>• Focus human attention where it matters most</li>
-                </ul>
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-4">
+                  <Users className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">Teachers & Tutors</h3>
+                <p className="text-sm text-muted-foreground">
+                  Use LearnGraph to track individual students, identify gaps before they become problems, and get recommendations for how to teach each student effectively.
+                </p>
               </div>
 
               <div className="p-6 rounded-xl border border-border/50 bg-card/50">
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <Code className="w-5 h-5 text-primary" />
-                  For Developers
-                </h3>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>• Plug any LLM into a rich context layer</li>
-                  <li>• Graph database for educational content</li>
-                  <li>• RESTful APIs for all operations</li>
-                  <li>• Extensible psychometric framework</li>
-                </ul>
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mb-4">
+                  <Bot className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">AI Application Builders</h3>
+                <p className="text-sm text-muted-foreground">
+                  Building an AI tutor or learning assistant? LearnGraph provides the personalization layer you need. Use our RAG context API to make any LLM dramatically smarter about your users.
+                </p>
               </div>
 
               <div className="p-6 rounded-xl border border-border/50 bg-card/50">
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-primary" />
-                  For Researchers
-                </h3>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>• Track learning effectiveness over time</li>
-                  <li>• Correlate psychometrics with outcomes</li>
-                  <li>• Export data for analysis</li>
-                  <li>• Future GNN training support</li>
-                </ul>
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center mb-4">
+                  <Database className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">Curriculum Designers</h3>
+                <p className="text-sm text-muted-foreground">
+                  Model any knowledge domain as a prerequisite graph. Use LearnGraph's gap analysis to see where learners struggle, and optimize your curriculum based on real data.
+                </p>
               </div>
             </div>
           </Section>
 
-          {/* Quick Start */}
-          <Section id="quick-start" title="Quick Start Code" icon={Code}>
+          {/* MAGIC MOMENTS */}
+          <Section id="magic-moments" title="Magic Moments: When LearnGraph Shines" icon={Sparkles}>
             <div className="space-y-4">
-              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
-                <h4 className="font-semibold mb-2">1. Store a Learner</h4>
-                <CodeBlock>{`await db.setLearnerProfile('user-123', {
-  userId: 'user-123',
-  psychometricProfile: {
-    big_five_openness: { score: 75, confidence: 0.8 },
-    learning_styles: { score: 80, confidence: 0.9 },  // Visual
-    // ... 37 more domains
-  },
-  learningStyle: {
-    primary: 'visual',
-    secondary: 'reading',
-    socialPreference: 'solo',
-    pacePreference: 'self-paced',
-    feedbackPreference: 'immediate'
-  }
-});`}</CodeBlock>
-              </div>
-
-              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
-                <h4 className="font-semibold mb-2">2. Store Concepts with Prerequisites</h4>
-                <CodeBlock>{`await db.addConcept({
-  id: 'arithmetic',
-  name: 'Basic Arithmetic',
-  difficulty: 1
-});
-
-await db.addConcept({
-  id: 'algebra',
-  name: 'Algebraic Expressions',
-  difficulty: 3
-});
-
-await db.addEdge({
-  from: 'arithmetic',
-  to: 'algebra',
-  strength: 'required'
-});`}</CodeBlock>
-              </div>
-
-              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
-                <h4 className="font-semibold mb-2">3. Track Progress</h4>
-                <CodeBlock>{`await db.setKnowledgeState('user-123', 'arithmetic', {
-  mastery: 90,
-  bloomLevel: 4,
-  lastAccessed: new Date()
-});`}</CodeBlock>
-              </div>
-
-              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
-                <h4 className="font-semibold mb-2">4. Get Recommendations</h4>
-                <CodeBlock>{`const zpd = await db.computeZPD('user-123');
-
-// Returns:
-// {
-//   optimalTarget: ['algebra'],  // Ready to learn!
-//   scaffolding: ['VISUAL_REPRESENTATION', 'WORKED_EXAMPLES'],
-//   estimatedTime: '2 hours'
-// }`}</CodeBlock>
-              </div>
-
-              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
-                <h4 className="font-semibold mb-2">5. Get RAG Context for AI Tutor</h4>
-                <CodeBlock>{`const context = await db.getRAGContext('user-123', 'explain algebra');
-
-// Pass to LLM:
-// "User is a visual learner with high anxiety. They've mastered
-// arithmetic (90%) but struggle with word problems. Use diagrams
-// and gentle tone. Address their confusion about 'moving terms'..."`}</CodeBlock>
-              </div>
-            </div>
-          </Section>
-
-          {/* System Requirements */}
-          <Section id="requirements" title="System Requirements" icon={Settings}>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
-                <h4 className="font-semibold mb-2">Runtime</h4>
-                <p className="text-sm text-muted-foreground">Node.js 18+ or Bun</p>
-              </div>
-              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
-                <h4 className="font-semibold mb-2">Database</h4>
-                <p className="text-sm text-muted-foreground">LevelDB (embedded, no separate server)</p>
-              </div>
-              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
-                <h4 className="font-semibold mb-2">Framework</h4>
-                <p className="text-sm text-muted-foreground">Next.js 14+ with App Router</p>
-              </div>
-              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
-                <h4 className="font-semibold mb-2">Storage</h4>
-                <p className="text-sm text-muted-foreground">~50MB for database + indexes</p>
-              </div>
-            </div>
-          </Section>
-
-          {/* Implementation Status */}
-          <Section id="status" title="Implementation Status" icon={CheckCircle2}>
-            <Table
-              headers={['Phase', 'Status', 'Description']}
-              rows={[
-                ['1 - Core Database', <span key="1" className="text-green-500 font-semibold">DONE</span>, 'LevelDB setup, CRUD operations'],
-                ['2 - Learner Model', <span key="2" className="text-green-500 font-semibold">DONE</span>, '39 psychometric domains, profile management'],
-                ['3 - Knowledge Model', <span key="3" className="text-green-500 font-semibold">DONE</span>, "Concept graph, prerequisites, Bloom's taxonomy"],
-                ['4 - ZPD Engine', <span key="4" className="text-green-500 font-semibold">DONE</span>, 'Zone computation, scaffolding selection'],
-                ['5 - Gap Analysis', <span key="5" className="text-green-500 font-semibold">DONE</span>, 'Gap detection, forgetting curve, spaced repetition'],
-                ['6 - Content Delivery + AI Curriculum + Assessments', <span key="6" className="text-yellow-500 font-semibold">Planned</span>, 'Adaptive content, AI graph generation, auto-assessments'],
-                ['7 - RAG Integration', <span key="7" className="text-yellow-500 font-semibold">Planned</span>, 'LLM context generation'],
-                ['8 - GNN Preparation', <span key="8" className="text-muted-foreground">Future</span>, 'Neural network training export'],
-              ]}
-            />
-            <p className="text-sm text-green-500 mt-4 font-medium">
-              MVP Complete: Phases 1-5 deliver personalized "what to learn next" with gap analysis.
-            </p>
-          </Section>
-
-          {/* Getting Psychometric Data */}
-          <Section id="psychometric-data" title="Getting Learner Profiles Into the Graph" icon={Users}>
-            <p className="text-muted-foreground mb-4">
-              A critical question: <strong>How does the system know about each learner's personality, learning style, and cognitive profile?</strong>
-            </p>
-
-            <h3 className="text-lg font-semibold mb-4">Four Ways to Populate the Learner Model</h3>
-            <Table
-              headers={['Approach', 'Effort', 'Accuracy', 'Best For']}
-              rows={[
-                [<strong key="1">LLM Integration</strong>, 'None for user', 'High (continuous)', 'Production systems with AI tutoring'],
-                [<strong key="2">Psychological Assessments</strong>, '~30 min', 'Highest (validated)', 'Research, formal education'],
-                [<strong key="3">Manual Entry</strong>, '~5 min', 'Medium (self-report)', 'Quick setup, user control'],
-                [<strong key="4">Behavioral Learning</strong>, 'None', 'Grows over time', 'Cold start, implicit inference'],
-              ]}
-            />
-
-            <h3 className="text-lg font-semibold mb-4 mt-8">Option 1: LLM Integration (Recommended for Production)</h3>
-            <p className="text-muted-foreground mb-4">
-              <strong>The Primary Use Case:</strong> Connect LearnGraph to your AI tutor. The LLM periodically updates the learner model based on how the student interacts with the system.
-            </p>
-            <CodeBlock title="LLM-Driven Profile Updates">{`┌─────────────────────────────────────────────────────────────────────────┐
-│                    LLM-DRIVEN PROFILE UPDATES                            │
-│                                                                          │
-│  Student interacts with AI Tutor                                        │
-│              │                                                           │
-│              ▼                                                           │
-│  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │  LLM observes:                                                   │    │
-│  │  • Response patterns (visual explanations work better)           │    │
-│  │  • Struggle indicators (frustration, confusion markers)          │    │
-│  │  • Learning speed (fast on math, slow on reading comprehension)  │    │
-│  │  • Question types asked (wants examples vs. theory)              │    │
-│  │  • Engagement patterns (short sessions, high frequency)          │    │
-│  └─────────────────────────────────────────────────────────────────┘    │
-│              │                                                           │
-│              ▼                                                           │
-│  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │  LLM calls LearnGraph API:                                       │    │
-│  │                                                                  │    │
-│  │  POST /api/learner-profile/update                                │    │
-│  │  {                                                               │    │
-│  │    "userId": "user-123",                                         │    │
-│  │    "updates": {                                                  │    │
-│  │      "learning_styles": { "score": 75, "confidence": 0.6 },      │    │
-│  │      "big_five_openness": { "score": 68, "confidence": 0.4 }     │    │
-│  │    },                                                            │    │
-│  │    "source": "llm_inference"                                     │    │
-│  │  }                                                               │    │
-│  └─────────────────────────────────────────────────────────────────┘    │
-│              │                                                           │
-│              ▼                                                           │
-│  Profile continuously improves → Better personalization → Better        │
-│  learning outcomes → More data → Better profile (virtuous cycle)        │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘`}</CodeBlock>
-
-            <h3 className="text-lg font-semibold mb-4 mt-8">Option 2: Psychological Assessments (Highest Accuracy)</h3>
-            <p className="text-muted-foreground mb-4">
-              For formal educational settings or research, use validated psychological instruments:
-            </p>
-            <Table
-              headers={['Assessment', 'Domains Covered', 'Time', 'Confidence']}
-              rows={[
-                ['Big Five Inventory (BFI-44)', 'Openness, Conscientiousness, Extraversion, Agreeableness, Neuroticism', '10 min', '0.9'],
-                ['VARK Questionnaire', 'Visual, Auditory, Reading/Writing, Kinesthetic learning styles', '5 min', '0.8'],
-                ['Motivated Strategies for Learning (MSLQ)', 'Self-efficacy, test anxiety, metacognition', '15 min', '0.85'],
-                ['Growth Mindset Scale', 'Fixed vs. growth mindset', '3 min', '0.8'],
-                ['Test Anxiety Inventory', 'Math anxiety, test anxiety', '5 min', '0.85'],
-              ]}
-            />
-
-            <h3 className="text-lg font-semibold mb-4 mt-8">Option 3: Manual Entry (Quick Setup)</h3>
-            <p className="text-muted-foreground mb-4">
-              Users or administrators can directly set psychometric scores through the Profile page.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              <strong>When to Use:</strong> Quick onboarding, user wants control, teacher setting up student profiles, testing/development.
-            </p>
-
-            <h3 className="text-lg font-semibold mb-4 mt-8">Option 4: Behavioral Learning (Start from Defaults)</h3>
-            <p className="text-muted-foreground mb-4">
-              Start with default/neutral values and let the system learn from behavior:
-            </p>
-            <CodeBlock>{`// Default profile (all neutral)
-const defaultProfile = {
-  learning_styles: { score: 50, confidence: 0.1 },
-  big_five_openness: { score: 50, confidence: 0.1 },
-  // ... all 39 domains at 50 with low confidence
-};
-
-// Confidence Grows Over Time:
-Day 1:  learning_styles = { score: 50, confidence: 0.1 }  (default)
-Day 7:  learning_styles = { score: 62, confidence: 0.3 }  (some signal)
-Day 30: learning_styles = { score: 71, confidence: 0.6 }  (clearer pattern)
-Day 90: learning_styles = { score: 75, confidence: 0.8 }  (high confidence)`}</CodeBlock>
-
-            <h3 className="text-lg font-semibold mb-4 mt-8">Hybrid Approach (Recommended)</h3>
-            <CodeBlock title="Multi-Source Profile Building">{`┌─────────────────────────────────────────────────────────────────────────┐
-│                    MULTI-SOURCE PROFILE BUILDING                         │
-│                                                                          │
-│  Priority 1: Validated Assessments (if taken)                           │
-│  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │  Big Five from BFI-44: confidence = 0.9                          │    │
-│  │  These scores are "locked" unless user retakes assessment        │    │
-│  └─────────────────────────────────────────────────────────────────┘    │
-│                              +                                           │
-│  Priority 2: User Self-Report (manual entry)                            │
-│  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │  "I'm a visual learner" → learning_styles.visual: confidence 0.7 │    │
-│  └─────────────────────────────────────────────────────────────────┘    │
-│                              +                                           │
-│  Priority 3: LLM Inference (ongoing)                                    │
-│  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │  Updates domains not covered by assessments or self-report       │    │
-│  │  Lower confidence (0.3-0.6), but continuous improvement          │    │
-│  └─────────────────────────────────────────────────────────────────┘    │
-│                              +                                           │
-│  Priority 4: Behavioral Defaults (fill gaps)                            │
-│  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │  Any domain without data starts at 50 with confidence 0.1        │    │
-│  └─────────────────────────────────────────────────────────────────┘    │
-│                              =                                           │
-│                    COMPLETE 39-DOMAIN PROFILE                            │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘`}</CodeBlock>
-
-            <h3 className="text-lg font-semibold mb-4 mt-8">Configuration Modes</h3>
-            <Table
-              headers={['Mode', 'Behavior', 'Best For']}
-              rows={[
-                ['Auto-Discovery', 'System continuously updates from LLM + behavior', 'Production with AI tutor'],
-                ['Manual Only', 'User sets values, system never changes them', 'Privacy-conscious users'],
-                ['Adaptive', 'User sets initial, system refines over time', 'Balance of control + learning'],
-                ['Assessment', 'Scores from validated tests, highest confidence', 'Research, formal education'],
-              ]}
-            />
-          </Section>
-
-          {/* Teacher Workflow */}
-          <Section id="teacher-workflow" title="Getting Content Into the Graph: Teacher Workflow" icon={Upload}>
-            <p className="text-muted-foreground mb-4">
-              A critical question for educators: <strong>How do I get my curriculum into the system?</strong>
-            </p>
-
-            <h3 className="text-lg font-semibold mb-4">Three Approaches to Curriculum Entry</h3>
-            <Table
-              headers={['Approach', 'Teacher Effort', 'Quality', 'Best For']}
-              rows={[
-                ['Manual Entry', 'High', 'Highest (expert curated)', 'Small courses, precise control'],
-                ['AI from Syllabus', 'Low', 'Medium (needs review)', 'Quick setup, large courses'],
-                [<strong key="1">Hybrid</strong>, 'Medium', 'High (AI draft → teacher refines)', <strong key="2">Recommended</strong>],
-              ]}
-            />
-
-            <h3 className="text-lg font-semibold mb-4 mt-8">The Hybrid Workflow (Recommended)</h3>
-            <CodeBlock title="Hybrid Curriculum Ingestion">{`┌─────────────────────────────────────────────────────────────────────────┐
-│                    HYBRID CURRICULUM INGESTION                           │
-│                                                                          │
-│  Step 1: TEACHER INPUT                                                   │
-│  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │  Upload syllabus, lesson plans, textbook chapters, or just       │    │
-│  │  describe: "I'm teaching intro data analytics covering Excel,    │    │
-│  │  SQL basics, Python pandas, and data visualization"              │    │
-│  └─────────────────────────────────────────────────────────────────┘    │
-│                              │                                           │
-│                              ▼                                           │
-│  Step 2: AI GENERATES DRAFT GRAPH                                        │
-│  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │  • Identifies concepts and their Bloom levels                    │    │
-│  │  • Infers prerequisite relationships                             │    │
-│  │  • Estimates difficulty ratings                                  │    │
-│  │  • Suggests related concepts students might need                 │    │
-│  └─────────────────────────────────────────────────────────────────┘    │
-│                              │                                           │
-│                              ▼                                           │
-│  Step 3: TEACHER REVIEWS IN VISUAL GRAPH UI                              │
-│  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │  • Drag nodes to adjust relationships                            │    │
-│  │  • Click to edit difficulty levels                               │    │
-│  │  • Add missing prerequisites                                     │    │
-│  │  • Remove incorrect connections                                  │    │
-│  │  • Approve or modify AI suggestions                              │    │
-│  └─────────────────────────────────────────────────────────────────┘    │
-│                              │                                           │
-│                              ▼                                           │
-│  Step 4: SYSTEM LEARNS FROM CORRECTIONS                                  │
-│  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │  • Improves future suggestions based on teacher feedback         │    │
-│  │  • Builds domain-specific pattern recognition                    │    │
-│  │  • Creates reusable curriculum templates                         │    │
-│  └─────────────────────────────────────────────────────────────────┘    │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘`}</CodeBlock>
-
-            <h3 className="text-lg font-semibold mb-4 mt-8">Supported Input Formats</h3>
-            <Table
-              headers={['Input Type', 'What AI Extracts']}
-              rows={[
-                ['Syllabus (PDF/Word)', 'Course topics, learning objectives, weekly schedule'],
-                ['Textbook chapters', 'Concept hierarchy, difficulty progression'],
-                ['Lesson plans', 'Specific skills, prerequisites mentioned'],
-                ['Learning objectives', "Bloom's taxonomy levels, measurable outcomes"],
-                ['Plain text description', 'Topic list, inferred relationships'],
-                ['Existing curriculum standards', 'State standards, AP frameworks, etc.'],
-              ]}
-            />
-          </Section>
-
-          {/* AI Assessments */}
-          <Section id="assessments" title="AI-Generated Assessments (Optional Feature)" icon={ClipboardList}>
-            <p className="text-muted-foreground mb-4">
-              When curriculum is imported, the system can <strong>optionally</strong> generate assessments to measure mastery. This feature includes a <strong>toggle switch</strong> to enable/disable it.
-            </p>
-
-            <div className="p-4 rounded-lg border border-border/50 bg-card/50 mb-6 flex items-center gap-3">
-              <ToggleLeft className="w-6 h-6 text-primary" />
-              <span className="font-medium">Assessments can be toggled ON/OFF per course or globally</span>
-            </div>
-
-            <h3 className="text-lg font-semibold mb-4">Assessment Types</h3>
-            <Table
-              headers={['Type', 'Questions', 'Purpose', 'When Used']}
-              rows={[
-                ['Quick Check', '2-3', 'Gate progression', 'Before marking concept "complete"'],
-                ['Mastery Test', '5-10', 'Determine mastery %', 'After studying concept content'],
-                ['Misconception Probe', '3-5', 'Detect wrong mental models', 'When errors indicate confusion'],
-                ['Spaced Review', '2-3', 'Verify retention', 'During spaced repetition reviews'],
-              ]}
-            />
-
-            <h3 className="text-lg font-semibold mb-4 mt-6">Question Types Supported</h3>
-            <Table
-              headers={['Type', 'Example']}
-              rows={[
-                [<code key="1">multiple_choice</code>, '"What is 2x when x=3?" A) 5 B) 6 C) 8 D) 9'],
-                [<code key="2">numeric</code>, '"Solve: 3x + 5 = 14. x = ___"'],
-                [<code key="3">short_answer</code>, '"Define what a linear equation is."'],
-                [<code key="4">worked_problem</code>, '"Solve step by step: 2x + 3 = 7"'],
-                [<code key="5">classification</code>, '"Drag each expression to: Linear / Non-linear"'],
-                [<code key="6">ordering</code>, '"Order the steps for solving this equation"'],
-              ]}
-            />
-
-            <h3 className="text-lg font-semibold mb-4 mt-6">Assessment Impact on System</h3>
-            <Table
-              headers={['Event', 'System Update']}
-              rows={[
-                ['Quick Check passed', 'Concept marked complete, unlock next concepts'],
-                ['Quick Check failed', 'Flag for review, suggest re-engagement'],
-                ['Mastery Test completed', 'Update knowledgeState.mastery with exact %'],
-                ['Misconception detected', 'Add to learner profile for targeted help'],
-                ['Spaced review passed', 'Extend review interval (3 days → 7 days)'],
-                ['Spaced review failed', 'Reset interval, add to priority queue'],
-              ]}
-            />
-          </Section>
-
-          {/* Future Vision */}
-          <Section id="future" title="Future Vision: Complete System" icon={Sparkles}>
-            <h3 className="text-lg font-semibold mb-4">Phase 6: Adaptive Content Delivery + AI Curriculum + Assessments</h3>
-            <CodeBlock>{`CONTENT MATCHING ENGINE
-• scoreContentMatch()     → Find best-fit learning materials
-• buildSessionPlan()      → Structure optimal learning session
-• determinePresentationStrategy() → Visual? Audio? Interactive?
-• Adaptive pacing         → Speed up or slow down based on response
-• Break recommendations   → Cognitive load management
-
-Target: 70% content match satisfaction, 80% session completion
-
-AI CURRICULUM INGESTION ENGINE
-• parseCurriculumInput()   → Extract topics from syllabus/text
-• inferPrerequisites()     → AI determines concept dependencies
-• estimateDifficulty()     → Rate concepts 1-10 based on complexity
-• generateBloomLevels()    → Map to Remember/Understand/Apply/etc.
-• presentForReview()       → Show draft graph for teacher approval
-
-Target: 80% of AI-generated edges approved, < 5 min to full course
-
-AI ASSESSMENT GENERATION ENGINE (toggle-enabled)
-• generateAssessments()       → Create questions from Bloom levels
-• generateQuickCheck()        → 2-3 gating questions
-• generateMasteryTest()       → 5-10 questions for mastery %
-• generateMisconceptionProbes()→ Detect wrong mental models
-
-Target: 80% AI questions approved, < 2 min teacher review per concept`}</CodeBlock>
-
-            <h3 className="text-lg font-semibold mb-4 mt-6">Phase 7: RAG Integration (LLM Augmentation)</h3>
-            <CodeBlock>{`RAG CONTEXT PIPELINE
-1. getRAGContext(userId, query)
-   │
-   ├─► Query-type detection (explanation? practice? review?)
-   │
-   ├─► Context aggregation
-   │   • Learner profile summary
-   │   • Relevant knowledge states
-   │   • Active misconceptions
-   │   • Recommended scaffolding
-   │
-   ├─► Prompt augmentation with templates
-   │
-   └─► Context optimization (< 2000 tokens)
-
-Target: Context retrieval < 150ms, 80% feel responses are personalized`}</CodeBlock>
-
-            <h3 className="text-lg font-semibold mb-4 mt-6">Phase 8: GNN Preparation (Machine Learning)</h3>
-            <CodeBlock>{`NEURAL NETWORK TRAINING EXPORT
-
-Learner Features (16-dimensional vector):
-[openness, conscientiousness, extraversion, agreeableness,
- neuroticism, anxiety, risk_tolerance, growth_mindset,
- self_efficacy, learning_style_visual, learning_style_auditory,
- learning_style_kinesthetic, metacognition, executive_functions,
- working_memory_estimate, attention_span]
-
-Concept Features (13-dimensional vector):
-[difficulty_overall, difficulty_cognitive, bloom_level,
- prerequisite_count, dependent_count, domain_embedding...,
- avg_time_to_master, common_misconception_count]
-
-Export format: PyTorch Geometric compatible
-Validation: All features in [0,1], no NaN values`}</CodeBlock>
-          </Section>
-
-          {/* Validation */}
-          <Section id="validation" title="How to Prove It Works" icon={CheckCircle2}>
-            <p className="text-muted-foreground mb-4">
-              LearnGraph includes validation tests that prove personalization actually happens:
-            </p>
-
-            <h3 className="text-lg font-semibold mb-4">The "Different Users, Different Results" Test</h3>
-            <p className="text-muted-foreground mb-4">Create two learners with opposite profiles:</p>
-
-            <div className="grid md:grid-cols-2 gap-4 mb-6">
-              <div className="p-4 rounded-lg border border-red-500/20 bg-red-500/5">
-                <h4 className="font-semibold mb-2">Learner A: "Anxious Visual Learner"</h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>Test Anxiety: 90%</li>
-                  <li>Openness: 30%</li>
-                  <li>Learning Style: Visual</li>
-                  <li>Risk Tolerance: 20%</li>
-                  <li>Self-Efficacy: 25%</li>
-                </ul>
-              </div>
-              <div className="p-4 rounded-lg border border-green-500/20 bg-green-500/5">
-                <h4 className="font-semibold mb-2">Learner B: "Confident Analytical Learner"</h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>Test Anxiety: 10%</li>
-                  <li>Openness: 90%</li>
-                  <li>Learning Style: Reading/Writing</li>
-                  <li>Risk Tolerance: 80%</li>
-                  <li>Self-Efficacy: 90%</li>
-                </ul>
-              </div>
-            </div>
-
-            <p className="text-muted-foreground mb-4">
-              <strong>With identical knowledge states</strong>, the system produces:
-            </p>
-
-            <Table
-              headers={['Output', 'Learner A (Anxious)', 'Learner B (Confident)']}
-              rows={[
-                ['ZPD Size', 'Smaller (fewer ready concepts)', 'Larger (more challenges)'],
-                ['Scaffolding', 'Visual aids, chunking, encouragement', 'Complex explanations, independent study'],
-                ['Learning Path', 'Smaller steps, more reviews', 'Larger leaps, fewer reviews'],
-                ['Difficulty Curve', 'Gradual, confidence-building', 'Steeper, challenge-seeking'],
-              ]}
-            />
-
-            <p className="text-sm text-green-500 mt-4 font-medium">
-              Pass criteria: Clear, measurable differences in ALL outputs.
-            </p>
-          </Section>
-
-          {/* Success Metrics */}
-          <Section id="metrics" title="Success Metrics" icon={BarChart3}>
-            <h3 className="text-lg font-semibold mb-4">Technical Performance</h3>
-            <Table
-              headers={['Metric', 'Target', 'Achieved']}
-              rows={[
-                ['Database write', '< 5ms', <span key="1" className="text-green-500 font-semibold">0.10ms</span>],
-                ['Database read', '< 2ms', <span key="2" className="text-green-500 font-semibold">0.02ms</span>],
-                ['Profile retrieval', '< 10ms', <span key="3" className="text-green-500 font-semibold">&lt; 5ms</span>],
-                ['Graph traversal (depth 5)', '< 100ms', <span key="4" className="text-green-500 font-semibold">&lt; 50ms</span>],
-                ['ZPD computation', '< 200ms', <span key="5" className="text-green-500 font-semibold">&lt; 100ms</span>],
-                ['API response', '< 500ms', <span key="6" className="text-green-500 font-semibold">&lt; 100ms</span>],
-              ]}
-            />
-
-            <h3 className="text-lg font-semibold mb-4 mt-6">Algorithm Accuracy</h3>
-            <Table
-              headers={['Metric', 'Target']}
-              rows={[
-                ['ZPD classification', '90% concepts in correct zone'],
-                ['Gap detection', '90% true positive rate'],
-                ['Forgotten detection', '85% based on decay formula'],
-                ['Retention at review', '85% post-review mastery'],
-              ]}
-            />
-
-            <h3 className="text-lg font-semibold mb-4 mt-6">User Experience (Phase 7+)</h3>
-            <Table
-              headers={['Metric', 'Target']}
-              rows={[
-                ['Recommendation relevance', '75%+ feel "personalized to them"'],
-                ['Simplicity', '90%+ can explain what system does in one sentence'],
-                ['Emotional resonance', 'Described as "helpful," "understanding," or "magical"'],
-                ['Time to first recommendation', '< 5 minutes from signup'],
-              ]}
-            />
-          </Section>
-
-          {/* Magic Moments */}
-          <Section id="magic-moments" title="Magic Moments" icon={Sparkles}>
-            <p className="text-muted-foreground mb-4">
-              LearnGraph creates specific moments where users realize the system truly knows them:
-            </p>
-            <div className="space-y-4">
-              {[
-                { num: 1, title: 'The "How did it know?" moment', desc: 'When the first recommendation addresses a struggle they never explicitly mentioned' },
-                { num: 2, title: 'The "Finally, someone understands" moment', desc: 'When explanations match their learning style perfectly' },
-                { num: 3, title: 'The "That\'s exactly what I needed" moment', desc: 'When scaffolding strategies feel intuitive, not prescribed' },
-                { num: 4, title: 'The "I\'m actually learning" moment', desc: 'When spaced repetition surfaces forgotten concepts at the perfect time' },
-                { num: 5, title: 'The "I feel seen" moment', desc: "When the system's assessment of their strengths/challenges matches their self-perception" },
-              ].map((moment) => (
-                <div key={moment.num} className="p-4 rounded-lg border border-border/50 bg-card/50 flex gap-4">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-semibold shrink-0">
-                    {moment.num}
+              <div className="p-5 rounded-xl border border-border/50 bg-card/50">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shrink-0">
+                    <Target className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h4 className="font-semibold">{moment.title}</h4>
-                    <p className="text-sm text-muted-foreground">{moment.desc}</p>
+                    <h3 className="font-semibold mb-1">"How did it know I'd struggle with that?"</h3>
+                    <p className="text-sm text-muted-foreground">
+                      LearnGraph predicted you'd find this concept difficult based on your anxiety levels and the abstract nature of the material—and recommended an easier prerequisite first.
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
-          </Section>
+              </div>
 
-          {/* Privacy */}
-          <Section id="privacy" title="Privacy & Trust" icon={Shield}>
-            <p className="text-muted-foreground mb-4">
-              LearnGraph is designed with privacy as a core principle:
-            </p>
-            <div className="grid sm:grid-cols-2 gap-4">
-              {[
-                { icon: Lock, title: 'Data minimization', desc: 'Only collect what directly improves recommendations' },
-                { icon: Settings, title: 'User control', desc: 'See, edit, and delete your psychometric profile anytime' },
-                { icon: Shield, title: 'Privacy-first mode', desc: 'System works with minimal data if preferred' },
-                { icon: Eye, title: 'Transparency', desc: 'Every recommendation includes a "Why this?" explanation' },
-                { icon: Heart, title: 'No judgment', desc: "System adapts to you; it doesn't label you" },
-              ].map((item, i) => (
-                <div key={i} className="p-4 rounded-lg border border-border/50 bg-card/50 flex gap-3">
-                  <item.icon className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              <div className="p-5 rounded-xl border border-border/50 bg-card/50">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center shrink-0">
+                    <Clock className="w-5 h-5 text-white" />
+                  </div>
                   <div>
-                    <h4 className="font-semibold text-sm">{item.title}</h4>
-                    <p className="text-xs text-muted-foreground">{item.desc}</p>
+                    <h3 className="font-semibold mb-1">"I would have completely forgotten that!"</h3>
+                    <p className="text-sm text-muted-foreground">
+                      LearnGraph's forgetting curve model predicted you'd drop below 60% retention tomorrow and scheduled a quick review today.
+                    </p>
                   </div>
                 </div>
-              ))}
+              </div>
+
+              <div className="p-5 rounded-xl border border-border/50 bg-card/50">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center shrink-0">
+                    <Heart className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-1">"This explanation actually makes sense to me!"</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Based on your visual learning style and preference for analogies, LearnGraph told the AI tutor to use diagrams and connect to real-world examples you'd understand.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-5 rounded-xl border border-border/50 bg-card/50">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shrink-0">
+                    <AlertTriangle className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-1">"I didn't even know I had that misconception!"</h3>
+                    <p className="text-sm text-muted-foreground">
+                      LearnGraph detected a pattern in your errors that revealed a subtle mental model problem—and provided targeted correction with counterexamples.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-5 rounded-xl border border-border/50 bg-card/50">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shrink-0">
+                    <Route className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-1">"The path to my goal is actually achievable!"</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Instead of an overwhelming 50-concept curriculum, LearnGraph showed you the 12 concepts you actually need—you already know the prerequisites for the rest.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </Section>
 
-          {/* API Reference */}
-          <Section id="api-reference" title="Complete API Reference" icon={Code}>
-            <h3 className="text-lg font-semibold mb-4">Core Endpoints</h3>
-            <Table
-              headers={['Endpoint', 'Method', 'Description']}
-              rows={[
-                [<code key="1">/api/learners</code>, 'GET, POST', 'List/create learners'],
-                [<code key="2">/api/learners/:userId</code>, 'GET, PUT, DELETE', 'Individual learner operations'],
-                [<code key="3">/api/learners/:userId/psychometrics</code>, 'GET, PUT', 'Psychometric profile'],
-                [<code key="4">/api/concepts</code>, 'GET, POST', 'List/create concepts'],
-                [<code key="5">/api/concepts/:conceptId</code>, 'GET, PUT, DELETE', 'Individual concept'],
-                [<code key="6">/api/edges</code>, 'GET, POST, DELETE', 'Prerequisite relationships'],
-                [<code key="7">/api/states</code>, 'GET, POST, DELETE', 'Knowledge states'],
-                [<code key="8">/api/graph</code>, 'GET', 'Full graph for visualization'],
-              ]}
-            />
-
-            <h3 className="text-lg font-semibold mb-4 mt-6">Intelligence Endpoints</h3>
-            <Table
-              headers={['Endpoint', 'Method', 'Description']}
-              rows={[
-                [<code key="1">/api/zpd</code>, 'GET', 'Zone of Proximal Development'],
-                [<code key="2">/api/learning-path</code>, 'GET', 'Personalized learning path'],
-                [<code key="3">/api/gaps</code>, 'GET', 'Knowledge gap detection'],
-                [<code key="4">/api/decay</code>, 'GET', 'Memory decay prediction'],
-                [<code key="5">/api/review-schedule</code>, 'GET', 'Optimal review timing (SM-2)'],
-                [<code key="6">/api/review-queue</code>, 'GET', 'Prioritized review queue'],
-                [<code key="7">/api/remediation</code>, 'GET', 'Gap remediation plan'],
-                [<code key="8">/api/status</code>, 'GET', 'System health check'],
-              ]}
-            />
-          </Section>
-
-          {/* Educational Psychology */}
-          <Section id="edu-psychology" title="Educational Psychology Foundation" icon={GraduationCap}>
-            <p className="text-muted-foreground mb-4">
-              LearnGraph is built on decades of validated research:
-            </p>
-            <Table
-              headers={['Theory', 'Application', 'Reference']}
-              rows={[
-                ['Zone of Proximal Development', 'Optimal challenge selection', 'Vygotsky (1978)'],
-                ["Bloom's Taxonomy", 'Cognitive level tracking', 'Bloom (1956)'],
-                ['Forgetting Curve', 'Memory decay prediction', 'Ebbinghaus (1885)'],
-                ['Scaffolding Theory', 'Support strategy selection', 'Bruner (1966)'],
-                ['Big Five Personality', 'Core trait modeling', 'Costa & McCrae (1992)'],
-                ['Growth Mindset', 'Belief system adaptation', 'Dweck (2006)'],
-                ['Multimedia Learning', 'Presentation optimization', 'Mayer (2009)'],
-                ['Self-Efficacy', 'Confidence-based adjustments', 'Bandura (1977)'],
-                ['Multiple Intelligences', 'Learning style diversity', 'Gardner (1983)'],
-                ['Spaced Repetition', 'Review scheduling (SM-2)', 'Wozniak (1987)'],
-              ]}
-            />
-          </Section>
-
-          {/* Expert Perspectives */}
-          <Section id="expert-perspectives" title="The Vision: Expert Perspectives" icon={Lightbulb}>
+          {/* QUICK TEST - MOVED DOWN */}
+          <Section id="quick-test" title="Try It Yourself: 5-Minute Demo" icon={Play}>
             <p className="text-muted-foreground mb-6">
-              LearnGraph was evaluated by three expert perspectives, each bringing a unique lens:
+              See LearnGraph in action. After starting the app, run these commands:
             </p>
 
+            <div className="space-y-4">
+              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-sm flex items-center justify-center">1</span>
+                  Create Your Learner Profile
+                </h4>
+                <CodeBlock>{`curl -X POST http://localhost:3000/api/learners \\
+  -H "Content-Type: application/json" \\
+  -d '{"name": "Your Name", "email": "you@example.com"}'`}</CodeBlock>
+                <p className="text-xs text-muted-foreground">Save the <code className="bg-muted px-1 rounded">userId</code> from the response.</p>
+              </div>
+
+              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-sm flex items-center justify-center">2</span>
+                  Load Sample Curriculum
+                </h4>
+                <CodeBlock>{`curl -X POST http://localhost:3000/api/seed-concepts`}</CodeBlock>
+              </div>
+
+              <div className="p-4 rounded-lg border border-border/50 bg-card/50">
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-sm flex items-center justify-center">3</span>
+                  Track Some Knowledge
+                </h4>
+                <CodeBlock>{`curl -X POST http://localhost:3000/api/knowledge-state \\
+  -H "Content-Type: application/json" \\
+  -d '{"userId": "YOUR_USER_ID", "conceptId": "arithmetic", "mastery": 85}'`}</CodeBlock>
+              </div>
+
+              <div className="p-4 rounded-lg border border-green-500/50 bg-green-500/5">
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-green-500/20 text-green-500 text-sm flex items-center justify-center">4</span>
+                  Ask "What Should I Learn Next?"
+                </h4>
+                <CodeBlock>{`curl "http://localhost:3000/api/zpd?userId=YOUR_USER_ID"`}</CodeBlock>
+                <p className="text-xs text-green-500">→ Returns concepts in your Zone of Proximal Development</p>
+              </div>
+
+              <div className="p-4 rounded-lg border border-amber-500/50 bg-amber-500/5">
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-amber-500/20 text-amber-500 text-sm flex items-center justify-center">5</span>
+                  Check for Knowledge Gaps
+                </h4>
+                <CodeBlock>{`curl "http://localhost:3000/api/gaps?userId=YOUR_USER_ID"`}</CodeBlock>
+                <p className="text-xs text-amber-500">→ Returns missing, partial, forgotten, and misconception gaps</p>
+              </div>
+
+              <div className="p-4 rounded-lg border border-blue-500/50 bg-blue-500/5">
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-500 text-sm flex items-center justify-center">6</span>
+                  See It Visually
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  Open <code className="bg-muted px-1 rounded">http://localhost:3000/graph</code> to see the knowledge graph with your mastery levels overlaid.
+                </p>
+              </div>
+            </div>
+          </Section>
+
+          {/* TECHNICAL DEEP DIVE */}
+          <Section id="technical" title="Technical Deep Dive" icon={Code}>
             <div className="space-y-6">
-              <div className="p-6 rounded-xl border border-border/50 bg-card/50">
-                <h3 className="font-semibold mb-2 flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-yellow-500" />
-                  Engineering Focus (Execution & Speed)
+              {/* Custom Graph Database Layer */}
+              <div className="p-6 rounded-xl bg-gradient-to-br from-indigo-500/5 to-purple-500/5 border border-indigo-500/20">
+                <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <Database className="w-5 h-5 text-indigo-500" />
+                  Custom Dual-Graph Database Layer
                 </h3>
-                <blockquote className="italic text-muted-foreground border-l-2 border-primary pl-4 mb-3">
-                  "The core concept of combining psychometric profiling, a knowledge graph, and a ZPD engine is fundamentally sound and aligns with a first-principles approach to education."
-                </blockquote>
-                <p className="text-sm text-muted-foreground">
-                  <strong>Key insight:</strong> The foundation is done—the real engineering happens in personalization. Move fast, build the simplest working version, then iterate.
+                <p className="text-muted-foreground mb-4">
+                  LearnGraph doesn't use an off-the-shelf graph database. Instead, it implements a <strong>custom dual-graph database layer</strong> built on top of LevelDB—a high-performance embedded key-value store. This gives us complete control over the data model while maintaining sub-millisecond performance.
                 </p>
+                <div className="grid md:grid-cols-3 gap-4 mb-4">
+                  <div className="p-3 rounded-lg bg-card/50 border border-border/50 text-center">
+                    <p className="text-2xl font-bold text-primary">2,046</p>
+                    <p className="text-xs text-muted-foreground">Lines of Code</p>
+                    <p className="text-xs text-muted-foreground/70">EducationGraphDB class</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-card/50 border border-border/50 text-center">
+                    <p className="text-2xl font-bold text-emerald-500">0.02ms</p>
+                    <p className="text-xs text-muted-foreground">Read Latency</p>
+                    <p className="text-xs text-muted-foreground/70">Average operation</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-card/50 border border-border/50 text-center">
+                    <p className="text-2xl font-bold text-amber-500">0.10ms</p>
+                    <p className="text-xs text-muted-foreground">Write Latency</p>
+                    <p className="text-xs text-muted-foreground/70">Average operation</p>
+                  </div>
+                </div>
+                <div className="text-sm text-muted-foreground space-y-2">
+                  <p><strong>Why custom?</strong> Off-the-shelf graph databases are designed for networked, multi-user scenarios. LearnGraph needs something different: a local, embedded, zero-configuration graph store that runs entirely in the browser's Node.js runtime.</p>
+                </div>
               </div>
 
-              <div className="p-6 rounded-xl border border-border/50 bg-card/50">
-                <h3 className="font-semibold mb-2 flex items-center gap-2">
-                  <Brain className="w-5 h-5 text-purple-500" />
-                  AI Research Focus (Mathematical Elegance)
-                </h3>
-                <blockquote className="italic text-muted-foreground border-l-2 border-primary pl-4 mb-3">
-                  "The true potential lies in whether the ZPD engine and Graph RAG can be rigorously defined as scalable, purely technical problems."
-                </blockquote>
-                <p className="text-sm text-muted-foreground">
-                  <strong>Key insight:</strong> Every algorithm must be formalized, scalable, and empirically validated. The 39 psychological domains must become computationally tractable features.
-                </p>
+              {/* Key Components */}
+              <h3 className="text-xl font-semibold mt-8">Graph Database Components</h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-lg border border-border/50 bg-card/50">
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-indigo-500" />
+                    Key Prefix Schema
+                  </h4>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Two logical graphs stored in one LevelDB instance using prefixed keys:
+                  </p>
+                  <ul className="text-xs text-muted-foreground space-y-1 font-mono">
+                    <li>• <span className="text-indigo-400">learner:*</span> → Graph A nodes</li>
+                    <li>• <span className="text-emerald-400">concept:*</span> → Graph B nodes</li>
+                    <li>• <span className="text-purple-400">edge:*</span> → Graph edges</li>
+                    <li>• <span className="text-amber-400">state:*</span> → User×Concept states</li>
+                    <li>• <span className="text-pink-400">index:*</span> → Secondary indexes</li>
+                  </ul>
+                </div>
+                <div className="p-4 rounded-lg border border-border/50 bg-card/50">
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <GitBranch className="w-4 h-4 text-emerald-500" />
+                    BFS Graph Traversal
+                  </h4>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Custom breadth-first search for prerequisite chains:
+                  </p>
+                  <ul className="text-xs text-muted-foreground space-y-1">
+                    <li>• <strong>getPrerequisiteChain()</strong> - What must be learned first</li>
+                    <li>• <strong>getDependentChain()</strong> - What depends on this</li>
+                    <li>• Cycle detection via visited set</li>
+                    <li>• Configurable max depth (default: 5)</li>
+                  </ul>
+                </div>
+                <div className="p-4 rounded-lg border border-border/50 bg-card/50">
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <Search className="w-4 h-4 text-amber-500" />
+                    Secondary Indexes
+                  </h4>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Fast lookups without full table scans:
+                  </p>
+                  <ul className="text-xs text-muted-foreground space-y-1">
+                    <li>• <strong>index:domain:*</strong> - Concepts by domain</li>
+                    <li>• <strong>index:learner-states:*</strong> - User's concepts</li>
+                    <li>• Iterator-based prefix scanning</li>
+                    <li>• Automatic index maintenance on writes</li>
+                  </ul>
+                </div>
+                <div className="p-4 rounded-lg border border-border/50 bg-card/50">
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-pink-500" />
+                    Atomic Batch Operations
+                  </h4>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Transactional writes for data integrity:
+                  </p>
+                  <ul className="text-xs text-muted-foreground space-y-1">
+                    <li>• Cascading deletes (learner → all states)</li>
+                    <li>• Multi-key atomic updates</li>
+                    <li>• Index consistency guarantees</li>
+                    <li>• Rollback on failure</li>
+                  </ul>
+                </div>
               </div>
 
-              <div className="p-6 rounded-xl border border-border/50 bg-card/50">
-                <h3 className="font-semibold mb-2 flex items-center gap-2">
-                  <Heart className="w-5 h-5 text-pink-500" />
-                  Product Vision Focus (User Experience)
-                </h3>
-                <blockquote className="italic text-muted-foreground border-l-2 border-primary pl-4 mb-3">
-                  "LearnGraph has the seeds of something truly revolutionary. The complex engines must become invisible to users."
-                </blockquote>
+              <h3 className="text-xl font-semibold mt-8">Data Architecture</h3>
+              <CodeBlock title="LevelDB Key Schema">{`┌──────────────────────────────────────────────────────────────────────────┐
+│                    CUSTOM GRAPH DATABASE ON LEVELDB                       │
+│                                                                          │
+│  GRAPH A: LEARNER MODEL                                                  │
+│  ───────────────────────                                                 │
+│  learner:{userId}                      → LearnerProfile (39 domains)     │
+│  state:{userId}:{conceptId}            → KnowledgeState (mastery, etc)   │
+│                                                                          │
+│  GRAPH B: KNOWLEDGE MODEL                                                │
+│  ────────────────────────                                                │
+│  concept:{conceptId}                   → ConceptNode (difficulty, Bloom) │
+│  edge:prereq:{from}:{to}               → PrerequisiteEdge (strength)     │
+│  edge:related:{edgeId}                 → RelatedEdge (bidirectional)     │
+│                                                                          │
+│  SECONDARY INDEXES                                                       │
+│  ─────────────────                                                       │
+│  index:domain:{domain}:{conceptId}     → Fast domain lookup              │
+│  index:learner-states:{userId}:{cId}   → Learner's touched concepts      │
+│                                                                          │
+│  PERFORMANCE                                                             │
+│  ───────────                                                             │
+│  Read: 0.02ms avg    Write: 0.10ms avg    Traversal (depth 5): <100ms   │
+└──────────────────────────────────────────────────────────────────────────┘`}</CodeBlock>
+
+              <h3 className="text-xl font-semibold mt-8">API Endpoints</h3>
+              <Table
+                headers={['Endpoint', 'Method', 'Purpose']}
+                rows={[
+                  [<code key="1">/api/learners</code>, 'GET, POST', 'List/create learner profiles'],
+                  [<code key="2">/api/learners/[id]</code>, 'GET, PUT, DELETE', 'Individual learner CRUD'],
+                  [<code key="3">/api/concepts</code>, 'GET, POST', 'List/create concepts'],
+                  [<code key="4">/api/prerequisites</code>, 'GET, POST, DELETE', 'Manage prerequisite edges'],
+                  [<code key="5">/api/knowledge-state</code>, 'GET, POST', 'Track learner mastery'],
+                  [<code key="6">/api/zpd</code>, 'GET', 'Compute Zone of Proximal Development'],
+                  [<code key="7">/api/gaps</code>, 'GET', 'Detect knowledge gaps'],
+                  [<code key="8">/api/decay</code>, 'GET', 'Predict memory decay'],
+                  [<code key="9">/api/review-schedule</code>, 'GET', 'Get spaced repetition schedule'],
+                  [<code key="10">/api/remediation</code>, 'GET', 'Generate remediation plans'],
+                ]}
+              />
+
+              <h3 className="text-xl font-semibold mt-8">Tech Stack</h3>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="p-4 rounded-lg border border-border/50 bg-card/50">
+                  <h4 className="font-medium mb-2">Frontend</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Next.js 14 (App Router)</li>
+                    <li>• React 18</li>
+                    <li>• TailwindCSS</li>
+                    <li>• Framer Motion</li>
+                    <li>• React Flow (graph visualization)</li>
+                  </ul>
+                </div>
+                <div className="p-4 rounded-lg border border-border/50 bg-card/50">
+                  <h4 className="font-medium mb-2">Backend</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• <strong>Custom Graph DB</strong> on LevelDB</li>
+                    <li>• EducationGraphDB (2,046 LOC)</li>
+                    <li>• TypeScript</li>
+                    <li>• Next.js API Routes</li>
+                    <li>• Zero external services</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </Section>
+
+          {/* THE BOTTOM LINE */}
+          <Section id="bottom-line" title="The Bottom Line" icon={Heart}>
+            <div className="space-y-6">
+              <div className="p-8 rounded-2xl bg-gradient-to-br from-primary/10 via-purple-500/10 to-pink-500/10 border border-primary/20">
+                <p className="text-xl text-foreground font-medium mb-6 text-center">
+                  LearnGraph isn't just another educational tool.<br />
+                  It's a fundamentally different approach to how AI understands learners.
+                </p>
+
+                <div className="grid md:grid-cols-3 gap-6 text-center">
+                  <div>
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center mx-auto mb-3">
+                      <Fingerprint className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="font-semibold mb-1">Deeply Personal</h3>
+                    <p className="text-sm text-muted-foreground">39 psychological dimensions create a complete picture of how you learn</p>
+                  </div>
+                  <div>
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center mx-auto mb-3">
+                      <ShieldCheck className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="font-semibold mb-1">100% Private</h3>
+                    <p className="text-sm text-muted-foreground">Your most intimate data never leaves your device</p>
+                  </div>
+                  <div>
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mx-auto mb-3">
+                      <BrainCircuit className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="font-semibold mb-1">Scientifically Grounded</h3>
+                    <p className="text-sm text-muted-foreground">Built on decades of research in educational psychology</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center">
+                <p className="text-lg text-muted-foreground mb-6">
+                  Every learner deserves an AI tutor that truly understands them.<br />
+                  LearnGraph makes that possible.
+                </p>
                 <p className="text-sm text-muted-foreground">
-                  <strong>Key insight:</strong> Users should feel <em>understood and effortlessly guided</em>, not "processed" by a system. The question to answer: <strong>"What is the one thing the user <em>feels</em> when they interact with this?"</strong>
+                  Built with ❤️ by Dr. Lee
                 </p>
               </div>
             </div>
-
-            <h3 className="text-lg font-semibold mb-4 mt-8">The Three Commandments</h3>
-            <Table
-              headers={['Principle', 'Test', 'Application']}
-              rows={[
-                [<strong key="1">Move Fast</strong>, 'Can we build it this week?', 'Prioritize shipping over perfection'],
-                [<strong key="2">Mathematical Elegance</strong>, 'Will it scale to 100K users?', 'Every algorithm must be O(n log n) or better'],
-                [<strong key="3">Make Complexity Disappear</strong>, 'Will users notice (in a bad way)?', 'Technical language becomes human language'],
-              ]}
-            />
           </Section>
 
-          {/* Bottom Line */}
-          <Section id="bottom-line" title="The Bottom Line" icon={Target}>
-            <div className="p-8 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-purple-500/5 text-center">
-              <h3 className="text-2xl font-bold mb-4">
-                LearnGraph transforms education from one-size-fits-all to truly personalized.
-              </h3>
-              <p className="text-muted-foreground mb-6">
-                Every learner is different. LearnGraph makes that difference visible, measurable, and actionable—enabling any AI to become a tutor that actually knows who it's teaching.
-              </p>
-              <CodeBlock>{`"What should I learn next?"
-
-Before LearnGraph:  [Random guess based on course order]
-
-After LearnGraph:   [Optimal concept based on YOUR mastery,
-                     YOUR prerequisites, YOUR anxiety level,
-                     YOUR learning style, YOUR forgetting curve,
-                     and YOUR cognitive profile]
-
-That's the difference.`}</CodeBlock>
-            </div>
-
-            <p className="text-center text-muted-foreground mt-8 italic">
-              LearnGraph - Making AI tutoring truly personal.
-            </p>
-          </Section>
         </div>
       </main>
     </div>

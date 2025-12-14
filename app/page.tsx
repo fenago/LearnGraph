@@ -14,6 +14,7 @@ import {
   ArrowRight,
   AlertTriangle,
   Sparkles,
+  Info,
 } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { BackgroundBeamsWithCollision } from '@/components/ui/background-beams';
@@ -150,10 +151,19 @@ export default function HomePage() {
               </span>
             </h1>
 
-            <p className="text-lg text-muted-foreground max-w-2xl">
+            <p className="text-lg text-muted-foreground max-w-2xl mb-6">
               Graph-Based Adaptive Education System. Personalized tutoring that
               makes any LLM smarter about each specific learner.
             </p>
+
+            <Link
+              href="/about"
+              className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+            >
+              <Info className="w-4 h-4" />
+              Learn what makes LearnGraph different
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </motion.div>
 
           {/* Info Card */}
