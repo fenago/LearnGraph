@@ -346,10 +346,13 @@ export default function HomePage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1 }}
-            className="mt-12 text-center"
+            className="mt-12 text-center space-y-2"
           >
             <p className="text-xs text-muted-foreground">
               Phase 5: Knowledge Gap Analysis & Spaced Repetition
+            </p>
+            <p className="text-xs text-muted-foreground/70">
+              Created by <span className="font-medium text-foreground/60">Dr. Lee</span>
             </p>
           </motion.footer>
         </div>

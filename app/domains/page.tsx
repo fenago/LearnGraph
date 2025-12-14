@@ -30,6 +30,8 @@ import {
   Zap,
   Link2,
   Users,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import {
   ALL_DOMAIN_IDS,
@@ -37,6 +39,7 @@ import {
   DOMAIN_CATEGORIES,
   getDomainsByCategory,
 } from '@/src/models/psychometrics';
+import { useLearners, useDB } from '@/lib/DBContext';
 
 // =============================================================================
 // DOMAIN RELATIONSHIPS - The "edges" in Graph A
@@ -248,6 +251,8 @@ const nodeTypes: NodeTypes = {
 };
 
 export default function DomainsPage() {
+  const { isLoading: dbLoading, error: dbError } = useDB();
+  const { learners, getLearner } = useLearners();
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [loading, setLoading] = useState(true);
@@ -255,40 +260,16 @@ export default function DomainsPage() {
   const [showCorrelations, setShowCorrelations] = useState(true);
   const [showSubscales, setShowSubscales] = useState(false);
   const [learnerScores, setLearnerScores] = useState<Record<string, number> | null>(null);
-  const [learners, setLearners] = useState<Array<{ userId: string; name: string }>>([]);
   const [selectedLearner, setSelectedLearner] = useState('');
-
-  useEffect(() => {
-    fetchLearners();
-  }, []);
 
   useEffect(() => {
     buildGraph();
   }, [showCorrelations, showSubscales, learnerScores]);
 
-  useEffect(() => {
-    if (selectedLearner) {
-      fetchLearnerScores(selectedLearner);
-    } else {
-      setLearnerScores(null);
-    }
-  }, [selectedLearner]);
-
-  async function fetchLearners() {
+  const fetchLearnerScores = useCallback(async (userId: string) => {
     try {
-      const res = await fetch('/api/learners');
-      const data = await res.json();
-      setLearners(data);
-    } catch (err) {
-      console.error('Failed to fetch learners:', err);
-    }
-  }
-
-  async function fetchLearnerScores(userId: string) {
-    try {
-      const res = await fetch(`/api/learners/${userId}`);
-      const data = await res.json();
-      if (data.psychometricScores) {
+      const data = await getLearner(userId);
+      if (data?.psychometricScores) {
         const scores: Record<string, number> = {};
         Object.entries(data.psychometricScores).forEach(([key, val]) => {
           scores[key] = (val as { score: number }).score;
@@ -298,7 +279,15 @@ export default function DomainsPage() {
     } catch (err) {
       console.error('Failed to fetch learner scores:', err);
     }
-  }
+  }, [getLearner]);
+
+  useEffect(() => {
+    if (selectedLearner) {
+      fetchLearnerScores(selectedLearner);
+    } else {
+      setLearnerScores(null);
+    }
+  }, [selectedLearner, fetchLearnerScores]);
 
   const buildGraph = useCallback(() => {
     setLoading(true);
@@ -494,6 +483,30 @@ export default function DomainsPage() {
     { label: 'Correlations', value: stats.correlations, icon: Link2, gradient: 'from-emerald-500 to-green-500', bg: 'bg-emerald-500/10' },
     { label: 'Subscale Groups', value: stats.subscaleGroups, icon: Zap, gradient: 'from-amber-500 to-orange-500', bg: 'bg-amber-500/10' },
   ];
+
+  // DB loading state
+  if (dbLoading) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">Initializing database...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // DB error state
+  if (dbError) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center text-destructive">
+          <AlertCircle className="w-8 h-8 mx-auto mb-3" />
+          <p>Database error: {dbError.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-background">

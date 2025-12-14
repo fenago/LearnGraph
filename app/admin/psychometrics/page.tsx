@@ -1,11 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from '@/app/components/Sidebar';
 import { EtherealShadow } from '@/components/ui/ethereal-shadow';
 import { Save, RefreshCw, ChevronDown, ChevronRight, Brain, User, AlertCircle, CheckCircle2, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLearners, useDB } from '@/lib/DBContext';
+import { ALL_DOMAIN_IDS, DOMAIN_METADATA } from '@/src/models/psychometrics';
+import { deriveLearningStyle, estimateCognitiveProfile } from '@/src/models/psychometrics';
 
 interface LearnerProfile {
   userId: string;
@@ -84,7 +87,8 @@ const itemVariants = {
 };
 
 export default function PsychometricsPage() {
-  const [learners, setLearners] = useState<LearnerProfile[]>([]);
+  const { db, isLoading: dbLoading, error: dbError } = useDB();
+  const { learners, getLearner, updateLearner } = useLearners();
   const [selectedUserId, setSelectedUserId] = useState('');
   const [psychometricData, setPsychometricData] = useState<PsychometricData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -94,43 +98,56 @@ export default function PsychometricsPage() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['Big Five', 'Cognitive']));
   const [editedScores, setEditedScores] = useState<Record<string, number>>({});
 
-  useEffect(() => {
-    fetchLearners();
-  }, []);
-
-  useEffect(() => {
-    if (selectedUserId) {
-      fetchPsychometricData(selectedUserId);
-    } else {
-      setPsychometricData(null);
-      setEditedScores({});
-    }
-  }, [selectedUserId]);
-
-  async function fetchLearners() {
-    try {
-      const res = await fetch('/api/learners');
-      const data = await res.json();
-      setLearners(data);
-    } catch (err) {
-      setError('Failed to fetch learners');
-    }
-  }
-
-  async function fetchPsychometricData(userId: string) {
+  const fetchPsychometricData = useCallback(async (userId: string) => {
+    if (!db) return;
     try {
       setLoading(true);
       setError('');
-      const res = await fetch(`/api/learners/${userId}/psychometrics?includeMetadata=true`);
-      if (!res.ok) {
-        throw new Error('Failed to fetch psychometric data');
+      const learner = await getLearner(userId);
+      if (!learner) {
+        throw new Error('Learner not found');
       }
-      const data = await res.json();
+
+      // Build psychometric data with metadata
+      const psychometricScores: Record<string, PsychometricScore & { metadata?: DomainMetadata }> = {};
+      const existingScores = learner.psychometricScores || {};
+
+      for (const domainId of ALL_DOMAIN_IDS) {
+        const metadata = DOMAIN_METADATA[domainId];
+        const existingScore = existingScores[domainId];
+        psychometricScores[domainId] = {
+          score: existingScore?.score ?? 0,
+          confidence: existingScore?.confidence ?? 0,
+          lastUpdated: existingScore?.lastUpdated || new Date().toISOString(),
+          source: existingScore?.source,
+          metadata: metadata ? {
+            name: metadata.name,
+            category: metadata.category,
+            description: metadata.description,
+            scoreInterpretation: metadata.scoreInterpretation,
+            educationalRelevance: metadata.educationalRelevance,
+          } : undefined,
+        };
+      }
+
+      const data: PsychometricData = {
+        userId,
+        psychometricScores,
+        scoreCount: Object.keys(existingScores).length,
+        totalDomains: ALL_DOMAIN_IDS.length,
+        learningStyle: learner.learningStyle,
+        learningStyleDescription: learner.learningStyle
+          ? `Primary ${learner.learningStyle.primary} learner with ${learner.learningStyle.socialPreference} social preference`
+          : undefined,
+        cognitiveProfile: learner.cognitiveProfile,
+      };
+
       setPsychometricData(data);
+
       // Initialize edited scores with existing scores
       const scores: Record<string, number> = {};
-      for (const [domain, scoreData] of Object.entries(data.psychometricScores)) {
-        const score = (scoreData as PsychometricScore & { metadata?: DomainMetadata }).score;
+      for (const [domain, scoreData] of Object.entries(existingScores)) {
+        const score = (scoreData as { score: number }).score;
         if (score !== null && score !== undefined) {
           scores[domain] = score;
         }
@@ -141,36 +158,46 @@ export default function PsychometricsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [db, getLearner]);
+
+  useEffect(() => {
+    if (selectedUserId) {
+      fetchPsychometricData(selectedUserId);
+    } else {
+      setPsychometricData(null);
+      setEditedScores({});
+    }
+  }, [selectedUserId, fetchPsychometricData]);
 
   async function handleSaveScores() {
-    if (!selectedUserId) return;
+    if (!selectedUserId || !db) return;
 
     try {
       setSaving(true);
       setError('');
       setSuccess('');
 
-      // Convert edited scores to API format
-      const scores: Record<string, { score: number; confidence: number; source: string }> = {};
+      // Convert edited scores to storage format
+      const scores: Record<string, { score: number; confidence: number; source: string; lastUpdated: string }> = {};
       for (const [domain, score] of Object.entries(editedScores)) {
         scores[domain] = {
           score,
           confidence: 0.8,
           source: 'admin-ui',
+          lastUpdated: new Date().toISOString(),
         };
       }
 
-      const res = await fetch(`/api/learners/${selectedUserId}/psychometrics`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scores, computeDerived: true }),
-      });
+      // Compute derived profiles
+      const learningStyle = deriveLearningStyle(scores as any);
+      const cognitiveProfile = estimateCognitiveProfile(scores as any);
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to save scores');
-      }
+      // Update learner profile
+      await updateLearner(selectedUserId, {
+        psychometricScores: scores as any,
+        learningStyle,
+        cognitiveProfile,
+      });
 
       setSuccess('Scores saved and profiles computed successfully!');
       await fetchPsychometricData(selectedUserId);
@@ -182,23 +209,27 @@ export default function PsychometricsPage() {
   }
 
   async function handleComputeProfiles() {
-    if (!selectedUserId) return;
+    if (!selectedUserId || !db) return;
 
     try {
       setSaving(true);
       setError('');
       setSuccess('');
 
-      const res = await fetch(`/api/learners/${selectedUserId}/psychometrics`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'all' }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to compute profiles');
+      const learner = await getLearner(selectedUserId);
+      if (!learner?.psychometricScores) {
+        throw new Error('No scores to compute profiles from');
       }
+
+      // Compute derived profiles
+      const learningStyle = deriveLearningStyle(learner.psychometricScores as any);
+      const cognitiveProfile = estimateCognitiveProfile(learner.psychometricScores as any);
+
+      // Update learner profile
+      await updateLearner(selectedUserId, {
+        learningStyle,
+        cognitiveProfile,
+      });
 
       setSuccess('Profiles computed successfully!');
       await fetchPsychometricData(selectedUserId);
@@ -239,6 +270,30 @@ export default function PsychometricsPage() {
   }
 
   const hasScores = Object.keys(editedScores).length > 0;
+
+  // DB loading state
+  if (dbLoading) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">Initializing database...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // DB error state
+  if (dbError) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center text-destructive">
+          <AlertCircle className="w-8 h-8 mx-auto mb-3" />
+          <p>Database error: {dbError.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-background">

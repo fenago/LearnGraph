@@ -1,25 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from '@/app/components/Sidebar';
 import { EtherealShadow } from '@/components/ui/ethereal-shadow';
 import { Plus, Edit, Trash2, X, Save, BookOpen, AlertCircle, Loader2, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface ConceptNode {
-  conceptId: string;
-  name: string;
-  domain: string;
-  subdomain?: string;
-  description?: string;
-  difficulty: {
-    absolute: number;
-    cognitiveLoad?: number;
-    abstractness?: number;
-  };
-  tags?: string[];
-}
+import { useConcepts, useDB } from '@/lib/DBContext';
+import type { ConceptNode } from '@/src/models/types';
 
 const DOMAINS = [
   'mathematics',
@@ -30,6 +18,7 @@ const DOMAINS = [
   'arts',
   'social-sciences',
   'engineering',
+  'computer-science',
   'other',
 ];
 
@@ -51,8 +40,8 @@ const itemVariants = {
 };
 
 export default function ConceptsPage() {
-  const [concepts, setConcepts] = useState<ConceptNode[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { isLoading: dbLoading, error: dbError } = useDB();
+  const { concepts, loading, createConcept, updateConcept, deleteConcept } = useConcepts();
   const [showForm, setShowForm] = useState(false);
   const [editingConcept, setEditingConcept] = useState<ConceptNode | null>(null);
   const [formData, setFormData] = useState({
@@ -69,22 +58,11 @@ export default function ConceptsPage() {
   const [error, setError] = useState('');
   const [filterDomain, setFilterDomain] = useState('');
 
-  useEffect(() => {
-    fetchConcepts();
-  }, [filterDomain]);
-
-  async function fetchConcepts() {
-    try {
-      const url = filterDomain ? `/api/concepts?domain=${filterDomain}` : '/api/concepts';
-      const res = await fetch(url);
-      const data = await res.json();
-      setConcepts(data);
-    } catch (err) {
-      setError('Failed to fetch concepts');
-    } finally {
-      setLoading(false);
-    }
-  }
+  // Filter concepts by domain
+  const filteredConcepts = useMemo(() => {
+    if (!filterDomain) return concepts;
+    return concepts.filter(c => c.domain === filterDomain);
+  }, [concepts, filterDomain]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -106,25 +84,14 @@ export default function ConceptsPage() {
 
     try {
       if (editingConcept) {
-        const res = await fetch(`/api/concepts/${editingConcept.conceptId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(conceptData),
-        });
-        if (!res.ok) throw new Error('Failed to update concept');
+        await updateConcept(conceptData);
       } else {
-        const res = await fetch('/api/concepts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(conceptData),
-        });
-        if (!res.ok) throw new Error('Failed to create concept');
+        await createConcept(conceptData);
       }
 
       setShowForm(false);
       setEditingConcept(null);
       resetForm();
-      fetchConcepts();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     }
@@ -134,12 +101,33 @@ export default function ConceptsPage() {
     if (!confirm('Are you sure you want to delete this concept?')) return;
 
     try {
-      const res = await fetch(`/api/concepts/${conceptId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete concept');
-      fetchConcepts();
+      await deleteConcept(conceptId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     }
+  }
+
+  // Show DB loading state
+  if (dbLoading) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">Initializing database...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (dbError) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center text-destructive">
+          <AlertCircle className="w-8 h-8 mx-auto mb-3" />
+          <p>Database error: {dbError.message}</p>
+        </div>
+      </div>
+    );
   }
 
   function resetForm() {
@@ -472,7 +460,7 @@ export default function ConceptsPage() {
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-3" />
               <p className="text-muted-foreground">Loading concepts...</p>
             </motion.div>
-          ) : concepts.length === 0 ? (
+          ) : filteredConcepts.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -497,7 +485,7 @@ export default function ConceptsPage() {
               animate="visible"
               className="grid gap-4"
             >
-              {concepts.map((concept, index) => (
+              {filteredConcepts.map((concept, index) => (
                 <motion.div
                   key={concept.conceptId}
                   initial={{ opacity: 0, y: 20 }}

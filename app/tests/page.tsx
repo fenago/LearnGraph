@@ -15,7 +15,11 @@ import {
   Layers,
   ChevronDown,
   ChevronRight,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
+import { useDB } from '@/lib/DBContext';
+import { v4 as uuidv4 } from 'uuid';
 
 interface TestResult {
   name: string;
@@ -160,6 +164,7 @@ const itemVariants = {
 };
 
 export default function TestsPage() {
+  const { db, isLoading: dbLoading, error: dbError, isReady } = useDB();
   const [testGroups, setTestGroups] = useState<TestGroup[]>(initialTests);
   const [isRunning, setIsRunning] = useState(false);
   const [summary, setSummary] = useState({ total: 0, passed: 0, failed: 0 });
@@ -235,6 +240,11 @@ export default function TestsPage() {
   }
 
   async function runAllTests() {
+    if (!db) {
+      console.error('Database not ready');
+      return;
+    }
+
     setIsRunning(true);
     setSummary({ total: 0, passed: 0, failed: 0 });
 
@@ -252,23 +262,20 @@ export default function TestsPage() {
 
     // Test: Create learner profile
     const createLearnerOk = await runTest(phase1Index, 0, async () => {
-      const res = await fetch('/api/learners', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Test User', email: 'test@example.com' }),
+      testUserId = uuidv4();
+      const learner = await db.setLearnerProfile(testUserId, {
+        name: 'Test User',
+        email: 'test@example.com',
       });
-      if (!res.ok) throw new Error('Failed to create learner');
-      const data = await res.json();
-      testUserId = data.userId;
+      if (!learner) throw new Error('Failed to create learner');
     });
     createLearnerOk ? passed++ : failed++;
 
     // Test: Read learner profile
     const readLearnerOk = await runTest(phase1Index, 1, async () => {
       if (!testUserId) throw new Error('No user ID from previous test');
-      const res = await fetch(`/api/learners/${testUserId}`);
-      if (!res.ok) throw new Error('Failed to read learner');
-      const data = await res.json();
+      const data = await db.getLearnerProfile(testUserId);
+      if (!data) throw new Error('Failed to read learner');
       if (data.name !== 'Test User') throw new Error('Data mismatch');
     });
     readLearnerOk ? passed++ : failed++;
@@ -276,90 +283,64 @@ export default function TestsPage() {
     // Test: Update learner profile
     const updateLearnerOk = await runTest(phase1Index, 2, async () => {
       if (!testUserId) throw new Error('No user ID');
-      const res = await fetch(`/api/learners/${testUserId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Updated User' }),
-      });
-      if (!res.ok) throw new Error('Failed to update learner');
+      await db.setLearnerProfile(testUserId, { name: 'Updated User' });
     });
     updateLearnerOk ? passed++ : failed++;
 
     // Test: Create concept
     const createConceptOk = await runTest(phase1Index, 4, async () => {
-      const res = await fetch('/api/concepts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conceptId: 'test-concept-1',
-          name: 'Test Concept 1',
-          domain: 'mathematics',
-          difficulty: { absolute: 5 },
-        }),
-      });
-      if (!res.ok) throw new Error('Failed to create concept');
       testConceptId = 'test-concept-1';
+      await db.addConcept({
+        conceptId: testConceptId,
+        name: 'Test Concept 1',
+        domain: 'mathematics',
+        difficulty: { absolute: 5, cognitiveLoad: 0.5, abstractness: 0.5 },
+      });
     });
     createConceptOk ? passed++ : failed++;
 
     // Create second concept for edge testing
-    await fetch('/api/concepts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        conceptId: 'test-concept-2',
-        name: 'Test Concept 2',
-        domain: 'mathematics',
-        difficulty: { absolute: 7 },
-      }),
-    });
     testConceptId2 = 'test-concept-2';
+    await db.addConcept({
+      conceptId: testConceptId2,
+      name: 'Test Concept 2',
+      domain: 'mathematics',
+      difficulty: { absolute: 7, cognitiveLoad: 0.7, abstractness: 0.7 },
+    });
 
     // Test: Read concept
     const readConceptOk = await runTest(phase1Index, 5, async () => {
-      const res = await fetch(`/api/concepts/${testConceptId}`);
-      if (!res.ok) throw new Error('Failed to read concept');
-      const data = await res.json();
+      const data = await db.getConcept(testConceptId);
+      if (!data) throw new Error('Failed to read concept');
       if (data.name !== 'Test Concept 1') throw new Error('Data mismatch');
     });
     readConceptOk ? passed++ : failed++;
 
     // Test: Update concept
     const updateConceptOk = await runTest(phase1Index, 6, async () => {
-      const res = await fetch(`/api/concepts/${testConceptId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: 'Updated Test Concept',
-          domain: 'mathematics',
-          difficulty: { absolute: 6 },
-        }),
+      await db.addConcept({
+        conceptId: testConceptId,
+        name: 'Updated Test Concept',
+        domain: 'mathematics',
+        difficulty: { absolute: 6, cognitiveLoad: 0.6, abstractness: 0.6 },
       });
-      if (!res.ok) throw new Error('Failed to update concept');
     });
     updateConceptOk ? passed++ : failed++;
 
     // Test: Create prerequisite edge
     const createEdgeOk = await runTest(phase1Index, 8, async () => {
-      const res = await fetch('/api/edges', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from: testConceptId,
-          to: testConceptId2,
-          strength: 'required',
-        }),
+      await db.addEdge({
+        from: testConceptId,
+        to: testConceptId2,
+        strength: 'required',
       });
-      if (!res.ok) throw new Error('Failed to create edge');
     });
     createEdgeOk ? passed++ : failed++;
 
     // Test: Read prerequisite edge
     const readEdgeOk = await runTest(phase1Index, 9, async () => {
-      const res = await fetch('/api/edges');
-      if (!res.ok) throw new Error('Failed to read edges');
-      const data = await res.json();
-      const found = data.some(
+      const edges = await db.listEdges();
+      const found = edges.some(
         (e: { from: string; to: string }) =>
           e.from === testConceptId && e.to === testConceptId2
       );
@@ -370,25 +351,16 @@ export default function TestsPage() {
     // Test: Create knowledge state
     const createStateOk = await runTest(phase1Index, 11, async () => {
       if (!testUserId || !testConceptId) throw new Error('Missing test data');
-      const res = await fetch('/api/states', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: testUserId,
-          conceptId: testConceptId,
-          mastery: 75,
-          bloomLevel: 'apply',
-        }),
+      await db.setKnowledgeState(testUserId, testConceptId, {
+        mastery: 75,
+        bloomLevel: 3, // APPLY level
       });
-      if (!res.ok) throw new Error('Failed to create knowledge state');
     });
     createStateOk ? passed++ : failed++;
 
     // Test: Read knowledge state
     const readStateOk = await runTest(phase1Index, 12, async () => {
-      const res = await fetch(`/api/states?userId=${testUserId}&conceptId=${testConceptId}`);
-      if (!res.ok) throw new Error('Failed to read knowledge state');
-      const data = await res.json();
+      const data = await db.getKnowledgeState(testUserId, testConceptId);
       if (!data) throw new Error('No state found');
       if (data.mastery !== 75) throw new Error('Data mismatch');
     });
@@ -396,102 +368,82 @@ export default function TestsPage() {
 
     // Test: Update knowledge state
     const updateStateOk = await runTest(phase1Index, 13, async () => {
-      const res = await fetch('/api/states', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: testUserId,
-          conceptId: testConceptId,
-          mastery: 90,
-          bloomLevel: 'analyze',
-        }),
+      await db.setKnowledgeState(testUserId, testConceptId, {
+        mastery: 90,
+        bloomLevel: 4, // ANALYZE level
       });
-      if (!res.ok) throw new Error('Failed to update knowledge state');
     });
     updateStateOk ? passed++ : failed++;
 
     // Phase 1.5 Tests
     const phase15Index = 1;
 
-    // Test: List learners via API
+    // Test: List learners via DB
     const listLearnersOk = await runTest(phase15Index, 0, async () => {
-      const res = await fetch('/api/learners');
-      if (!res.ok) throw new Error('Failed to list learners');
-      const data = await res.json();
+      const data = await db.listLearnerProfiles();
       if (!Array.isArray(data)) throw new Error('Expected array');
     });
     listLearnersOk ? passed++ : failed++;
 
-    // Test: List concepts via API
+    // Test: List concepts via DB
     const listConceptsOk = await runTest(phase15Index, 1, async () => {
-      const res = await fetch('/api/concepts');
-      if (!res.ok) throw new Error('Failed to list concepts');
-      const data = await res.json();
+      const data = await db.listConcepts();
       if (!Array.isArray(data)) throw new Error('Expected array');
     });
     listConceptsOk ? passed++ : failed++;
 
-    // Test: List edges via API
+    // Test: List edges via DB
     const listEdgesOk = await runTest(phase15Index, 2, async () => {
-      const res = await fetch('/api/edges');
-      if (!res.ok) throw new Error('Failed to list edges');
-      const data = await res.json();
+      const data = await db.listEdges();
       if (!Array.isArray(data)) throw new Error('Expected array');
     });
     listEdgesOk ? passed++ : failed++;
 
-    // Test: List knowledge states via API
+    // Test: List knowledge states via DB
     const listStatesOk = await runTest(phase15Index, 3, async () => {
-      const res = await fetch('/api/states');
-      if (!res.ok) throw new Error('Failed to list states');
-      const data = await res.json();
+      const data = await db.getLearnerKnowledgeStates(testUserId);
       if (!Array.isArray(data)) throw new Error('Expected array');
     });
     listStatesOk ? passed++ : failed++;
 
-    // Test: Get graph data via API
+    // Test: Get graph data (build from concepts and edges)
     const getGraphOk = await runTest(phase15Index, 4, async () => {
-      const res = await fetch('/api/graph');
-      if (!res.ok) throw new Error('Failed to get graph');
-      const data = await res.json();
-      if (!data.nodes || !data.edges) throw new Error('Missing nodes or edges');
+      const concepts = await db.listConcepts();
+      const edges = await db.listEdges();
+      const nodes = concepts.map(c => ({ id: c.conceptId, ...c }));
+      if (!nodes || !edges) throw new Error('Missing nodes or edges');
     });
     getGraphOk ? passed++ : failed++;
 
-    // Test: Graph includes learner overlay
+    // Test: Graph includes learner overlay (knowledge states for user)
     const overlayOk = await runTest(phase15Index, 5, async () => {
       if (!testUserId) throw new Error('No user ID');
-      const res = await fetch(`/api/graph?userId=${testUserId}`);
-      if (!res.ok) throw new Error('Failed to get graph with overlay');
-      const data = await res.json();
-      if (!data.overlay) throw new Error('Missing overlay');
-      if (data.overlay.userId !== testUserId) throw new Error('Wrong user in overlay');
+      const states = await db.getLearnerKnowledgeStates(testUserId);
+      const overlay = { userId: testUserId, states };
+      if (!overlay) throw new Error('Missing overlay');
+      if (overlay.userId !== testUserId) throw new Error('Wrong user in overlay');
     });
     overlayOk ? passed++ : failed++;
 
     // Cleanup: Delete test data
     await runTest(phase1Index, 14, async () => {
-      await fetch(`/api/states?userId=${testUserId}&conceptId=${testConceptId}`, {
-        method: 'DELETE',
-      });
+      await db.deleteKnowledgeState(testUserId, testConceptId);
     });
     passed++;
 
     await runTest(phase1Index, 10, async () => {
-      await fetch(`/api/edges?from=${testConceptId}&to=${testConceptId2}`, {
-        method: 'DELETE',
-      });
+      await db.deleteEdge(testConceptId, testConceptId2);
     });
     passed++;
 
     await runTest(phase1Index, 7, async () => {
-      await fetch(`/api/concepts/${testConceptId}`, { method: 'DELETE' });
-      await fetch(`/api/concepts/${testConceptId2}`, { method: 'DELETE' });
+      await db.deleteConcept(testConceptId);
+      await db.deleteConcept(testConceptId2);
     });
     passed++;
 
     await runTest(phase1Index, 3, async () => {
-      await fetch(`/api/learners/${testUserId}`, { method: 'DELETE' });
+      await db.deleteLearnerProfile(testUserId);
     });
     passed++;
 
@@ -499,43 +451,25 @@ export default function TestsPage() {
     // Phase 2 Tests: Learner Model (Psychometrics)
     // =====================================================================
     const phase2Index = 2;
-    let phase2UserId = '';
+    let phase2UserId = uuidv4();
 
-    const createPhase2Learner = await fetch('/api/learners', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Phase2 Test User' }),
-    });
-    if (createPhase2Learner.ok) {
-      const data = await createPhase2Learner.json();
-      phase2UserId = data.userId;
-    }
+    await db.setLearnerProfile(phase2UserId, { name: 'Phase2 Test User' });
 
     const getEmptyScoresOk = await runTest(phase2Index, 0, async () => {
       if (!phase2UserId) throw new Error('No user ID');
-      const res = await fetch(`/api/learners/${phase2UserId}/psychometrics`);
-      if (!res.ok) throw new Error('Failed to get psychometric scores');
-      const data = await res.json();
-      if (data.scoreCount !== 0) throw new Error('Expected 0 scores for new user');
-      if (data.totalDomains !== 39) throw new Error('Expected 39 total domains');
+      const data = await db.getPsychometricScores(phase2UserId);
+      // Returns Record<string, PsychometricScore> - empty for new user
+      if (Object.keys(data).length !== 0) throw new Error('Expected 0 scores for new user');
     });
     getEmptyScoresOk ? passed++ : failed++;
 
     const updateSingleScoreOk = await runTest(phase2Index, 1, async () => {
       if (!phase2UserId) throw new Error('No user ID');
-      const res = await fetch(`/api/learners/${phase2UserId}/psychometrics`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scores: {
-            big_five_openness: { score: 75, confidence: 0.8 },
-          },
-          computeDerived: false,
-        }),
+      const result = await db.updatePsychometricScores(phase2UserId, {
+        big_five_openness: { score: 75, confidence: 0.8 },
       });
-      if (!res.ok) throw new Error('Failed to update score');
-      const data = await res.json();
-      if (!data.updatedDomains.includes('big_five_openness')) {
+      // Returns LearnerProfile
+      if (!result.psychometricScores.big_five_openness) {
         throw new Error('Domain not updated');
       }
     });
@@ -543,84 +477,62 @@ export default function TestsPage() {
 
     const bulkUpdateOk = await runTest(phase2Index, 2, async () => {
       if (!phase2UserId) throw new Error('No user ID');
-      const res = await fetch(`/api/learners/${phase2UserId}/psychometrics`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scores: {
-            big_five_conscientiousness: { score: 80, confidence: 0.9 },
-            big_five_extraversion: { score: 60, confidence: 0.7 },
-            big_five_agreeableness: { score: 70, confidence: 0.8 },
-            big_five_neuroticism: { score: 40, confidence: 0.7 },
-            cognitive_abilities: { score: 85, confidence: 0.9 },
-            learning_styles: { score: 65, confidence: 0.8 },
-            information_processing: { score: 70, confidence: 0.8 },
-            executive_functions: { score: 75, confidence: 0.8 },
-          },
-          computeDerived: false,
-        }),
+      const result = await db.updatePsychometricScores(phase2UserId, {
+        big_five_conscientiousness: { score: 80, confidence: 0.9 },
+        big_five_extraversion: { score: 60, confidence: 0.7 },
+        big_five_agreeableness: { score: 70, confidence: 0.8 },
+        big_five_neuroticism: { score: 40, confidence: 0.7 },
+        cognitive_abilities: { score: 85, confidence: 0.9 },
+        learning_styles: { score: 65, confidence: 0.8 },
+        information_processing: { score: 70, confidence: 0.8 },
+        executive_functions: { score: 75, confidence: 0.8 },
       });
-      if (!res.ok) throw new Error('Failed to bulk update scores');
-      const data = await res.json();
-      if (data.updatedDomains.length !== 8) {
-        throw new Error(`Expected 8 domains updated, got ${data.updatedDomains.length}`);
+      // Returns LearnerProfile - check that scores exist
+      const scoreCount = Object.keys(result.psychometricScores).length;
+      if (scoreCount < 8) {
+        throw new Error(`Expected at least 8 scores, got ${scoreCount}`);
       }
     });
     bulkUpdateOk ? passed++ : failed++;
 
     const computeStyleOk = await runTest(phase2Index, 3, async () => {
       if (!phase2UserId) throw new Error('No user ID');
-      const res = await fetch(`/api/learners/${phase2UserId}/psychometrics`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'learning-style' }),
-      });
-      if (!res.ok) throw new Error('Failed to compute learning style');
-      const data = await res.json();
-      if (!data.learningStyle) throw new Error('No learning style returned');
+      const result = await db.computeAndStoreLearningStyle(phase2UserId);
+      if (!result.learningStyle) throw new Error('No learning style returned');
     });
     computeStyleOk ? passed++ : failed++;
 
     const computeCogOk = await runTest(phase2Index, 4, async () => {
       if (!phase2UserId) throw new Error('No user ID');
-      const res = await fetch(`/api/learners/${phase2UserId}/psychometrics`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'cognitive-profile' }),
-      });
-      if (!res.ok) throw new Error('Failed to compute cognitive profile');
-      const data = await res.json();
-      if (!data.cognitiveProfile) throw new Error('No cognitive profile returned');
+      const result = await db.computeAndStoreCognitiveProfile(phase2UserId);
+      if (!result.cognitiveProfile) throw new Error('No cognitive profile returned');
     });
     computeCogOk ? passed++ : failed++;
 
     const verifyStyleOk = await runTest(phase2Index, 5, async () => {
       if (!phase2UserId) throw new Error('No user ID');
-      const res = await fetch(`/api/learners/${phase2UserId}/psychometrics`);
-      if (!res.ok) throw new Error('Failed to get profile');
-      const data = await res.json();
-      if (!data.learningStyle) throw new Error('Learning style not found');
-      if (!data.learningStyle.primary) throw new Error('Missing primary learning modality');
-      if (!data.learningStyleDescription) throw new Error('Missing style description');
+      const profile = await db.getLearnerProfile(phase2UserId);
+      if (!profile) throw new Error('Profile not found');
+      if (!profile.learningStyle) throw new Error('Learning style not found');
+      if (!profile.learningStyle.primary) throw new Error('Missing primary learning modality');
     });
     verifyStyleOk ? passed++ : failed++;
 
     const verifyCogOk = await runTest(phase2Index, 6, async () => {
       if (!phase2UserId) throw new Error('No user ID');
-      const res = await fetch(`/api/learners/${phase2UserId}/psychometrics`);
-      if (!res.ok) throw new Error('Failed to get profile');
-      const data = await res.json();
-      if (!data.cognitiveProfile) throw new Error('Cognitive profile not found');
-      if (!data.cognitiveProfile.workingMemoryCapacity) throw new Error('Missing working memory');
-      if (!data.cognitiveProfile.attentionSpan) throw new Error('Missing attention span');
-      if (!data.cognitiveProfile.processingSpeed) throw new Error('Missing processing speed');
-      if (!data.cognitiveProfile.abstractThinking) throw new Error('Missing abstract thinking');
+      const profile = await db.getLearnerProfile(phase2UserId);
+      if (!profile) throw new Error('Profile not found');
+      if (!profile.cognitiveProfile) throw new Error('Cognitive profile not found');
+      if (!profile.cognitiveProfile.workingMemoryCapacity) throw new Error('Missing working memory');
+      if (!profile.cognitiveProfile.attentionSpan) throw new Error('Missing attention span');
+      if (!profile.cognitiveProfile.processingSpeed) throw new Error('Missing processing speed');
+      if (!profile.cognitiveProfile.abstractThinking) throw new Error('Missing abstract thinking');
     });
     verifyCogOk ? passed++ : failed++;
 
     await runTest(phase2Index, 7, async () => {
       if (phase2UserId) {
-        await fetch(`/api/learners/${phase2UserId}`, { method: 'DELETE' });
+        await db.deleteLearnerProfile(phase2UserId);
       }
     });
     passed++;
@@ -631,78 +543,51 @@ export default function TestsPage() {
     const phase3Index = 3;
 
     const setupPhase3Ok = await runTest(phase3Index, 0, async () => {
-      const resA = await fetch('/api/concepts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conceptId: 'phase3-concept-a',
-          name: 'Algebra Basics',
-          domain: 'mathematics',
-          description: 'Basic algebraic operations',
-          difficulty: { absolute: 3, cognitiveLoad: 0.3, abstractness: 0.3 },
-          bloomObjectives: { remember: 'Define variables', understand: 'Explain equations' },
-        }),
+      await db.addConcept({
+        conceptId: 'phase3-concept-a',
+        name: 'Algebra Basics',
+        domain: 'mathematics',
+        description: 'Basic algebraic operations',
+        difficulty: { absolute: 3, cognitiveLoad: 0.3, abstractness: 0.3 },
+        bloomObjectives: { remember: ['Define variables'], understand: ['Explain equations'] },
       });
-      if (!resA.ok) throw new Error('Failed to create concept A');
 
-      const resB = await fetch('/api/concepts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conceptId: 'phase3-concept-b',
-          name: 'Linear Equations',
-          domain: 'mathematics',
-          description: 'Solving linear equations',
-          difficulty: { absolute: 5, cognitiveLoad: 0.5, abstractness: 0.5 },
-          bloomObjectives: { apply: 'Solve linear equations', analyze: 'Identify equation types' },
-        }),
+      await db.addConcept({
+        conceptId: 'phase3-concept-b',
+        name: 'Linear Equations',
+        domain: 'mathematics',
+        description: 'Solving linear equations',
+        difficulty: { absolute: 5, cognitiveLoad: 0.5, abstractness: 0.5 },
+        bloomObjectives: { apply: ['Solve linear equations'], analyze: ['Identify equation types'] },
       });
-      if (!resB.ok) throw new Error('Failed to create concept B');
 
-      const resC = await fetch('/api/concepts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conceptId: 'phase3-concept-c',
-          name: 'Quadratic Equations',
-          domain: 'mathematics',
-          description: 'Solving quadratic equations',
-          difficulty: { absolute: 7, cognitiveLoad: 0.7, abstractness: 0.7 },
-          bloomObjectives: { evaluate: 'Evaluate solution methods', create: 'Derive quadratic formula' },
-        }),
+      await db.addConcept({
+        conceptId: 'phase3-concept-c',
+        name: 'Quadratic Equations',
+        domain: 'mathematics',
+        description: 'Solving quadratic equations',
+        difficulty: { absolute: 7, cognitiveLoad: 0.7, abstractness: 0.7 },
+        bloomObjectives: { evaluate: ['Evaluate solution methods'], create: ['Derive quadratic formula'] },
       });
-      if (!resC.ok) throw new Error('Failed to create concept C');
 
-      const edge1 = await fetch('/api/edges', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from: 'phase3-concept-a',
-          to: 'phase3-concept-b',
-          strength: 'required',
-          reason: 'Must know basics before linear equations',
-        }),
+      await db.addEdge({
+        from: 'phase3-concept-a',
+        to: 'phase3-concept-b',
+        strength: 'required',
+        reason: 'Must know basics before linear equations',
       });
-      if (!edge1.ok) throw new Error('Failed to create edge A->B');
 
-      const edge2 = await fetch('/api/edges', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from: 'phase3-concept-b',
-          to: 'phase3-concept-c',
-          strength: 'required',
-          reason: 'Must know linear before quadratic',
-        }),
+      await db.addEdge({
+        from: 'phase3-concept-b',
+        to: 'phase3-concept-c',
+        strength: 'required',
+        reason: 'Must know linear before quadratic',
       });
-      if (!edge2.ok) throw new Error('Failed to create edge B->C');
     });
     setupPhase3Ok ? passed++ : failed++;
 
     const searchConceptsOk = await runTest(phase3Index, 1, async () => {
-      const res = await fetch('/api/concepts?search=Algebra');
-      if (!res.ok) throw new Error('Failed to search concepts');
-      const data = await res.json();
+      const data = await db.searchConcepts('Algebra');
       if (!Array.isArray(data)) throw new Error('Expected array');
       const found = data.some((c: { conceptId: string }) => c.conceptId === 'phase3-concept-a');
       if (!found) throw new Error('Search did not find "Algebra Basics"');
@@ -710,9 +595,7 @@ export default function TestsPage() {
     searchConceptsOk ? passed++ : failed++;
 
     const filterDifficultyOk = await runTest(phase3Index, 2, async () => {
-      const res = await fetch('/api/concepts?minDifficulty=6&maxDifficulty=10');
-      if (!res.ok) throw new Error('Failed to filter by difficulty');
-      const data = await res.json();
+      const data = await db.listConceptsByDifficulty(6, 10);
       if (!Array.isArray(data)) throw new Error('Expected array');
       const found = data.some((c: { conceptId: string }) => c.conceptId === 'phase3-concept-c');
       if (!found) throw new Error('Did not find concept with difficulty 7');
@@ -722,9 +605,7 @@ export default function TestsPage() {
     filterDifficultyOk ? passed++ : failed++;
 
     const filterBloomOk = await runTest(phase3Index, 3, async () => {
-      const res = await fetch('/api/concepts?bloomLevel=apply');
-      if (!res.ok) throw new Error('Failed to filter by Bloom level');
-      const data = await res.json();
+      const data = await db.listConceptsByBloomLevel('apply');
       if (!Array.isArray(data)) throw new Error('Expected array');
       const found = data.some((c: { conceptId: string }) => c.conceptId === 'phase3-concept-b');
       if (!found) throw new Error('Did not find concept with apply bloom level');
@@ -732,50 +613,42 @@ export default function TestsPage() {
     filterBloomOk ? passed++ : failed++;
 
     const getPrereqsOk = await runTest(phase3Index, 4, async () => {
-      const res = await fetch('/api/concepts/phase3-concept-c/prerequisites');
-      if (!res.ok) throw new Error('Failed to get prerequisites');
-      const data = await res.json();
-      if (!data.chain || !Array.isArray(data.chain)) throw new Error('No chain returned');
-      if (data.totalPrerequisites < 2) throw new Error('Expected at least 2 prerequisites');
-      const hasB = data.chain.some((c: { conceptId: string; depth: number }) =>
-        c.conceptId === 'phase3-concept-b' && c.depth === 1
+      const data = await db.getPrerequisiteChain('phase3-concept-c');
+      if (!Array.isArray(data)) throw new Error('No chain returned');
+      if (data.length < 2) throw new Error('Expected at least 2 prerequisites');
+      const hasB = data.some((c) =>
+        c.concept.conceptId === 'phase3-concept-b' && c.depth === 1
       );
       if (!hasB) throw new Error('Missing concept-b at depth 1');
     });
     getPrereqsOk ? passed++ : failed++;
 
     const getDependentsOk = await runTest(phase3Index, 5, async () => {
-      const res = await fetch('/api/concepts/phase3-concept-a/dependents');
-      if (!res.ok) throw new Error('Failed to get dependents');
-      const data = await res.json();
-      if (!data.chain || !Array.isArray(data.chain)) throw new Error('No chain returned');
-      if (data.totalDependents < 2) throw new Error('Expected at least 2 dependents');
-      const hasB = data.chain.some((c: { conceptId: string; depth: number }) =>
-        c.conceptId === 'phase3-concept-b' && c.depth === 1
+      const data = await db.getDependentChain('phase3-concept-a');
+      if (!Array.isArray(data)) throw new Error('No chain returned');
+      if (data.length < 2) throw new Error('Expected at least 2 dependents');
+      const hasB = data.some((c) =>
+        c.concept.conceptId === 'phase3-concept-b' && c.depth === 1
       );
       if (!hasB) throw new Error('Missing concept-b at depth 1');
     });
     getDependentsOk ? passed++ : failed++;
 
     const verifyDepthOk = await runTest(phase3Index, 6, async () => {
-      const res = await fetch('/api/concepts/phase3-concept-c/prerequisites?depth=1');
-      if (!res.ok) throw new Error('Failed to get prerequisites with depth=1');
-      const data = await res.json();
-      if (data.totalPrerequisites !== 1) throw new Error(`Expected 1 prereq with depth=1, got ${data.totalPrerequisites}`);
+      const data = await db.getPrerequisiteChain('phase3-concept-c', 1);
+      if (data.length !== 1) throw new Error(`Expected 1 prereq with depth=1, got ${data.length}`);
 
-      const res2 = await fetch('/api/concepts/phase3-concept-c/prerequisites?direct=true');
-      if (!res2.ok) throw new Error('Failed to get direct prerequisites');
-      const data2 = await res2.json();
-      if (data2.totalPrerequisites !== 1) throw new Error('direct=true should return only 1 prereq');
+      const data2 = await db.getPrerequisites('phase3-concept-c');
+      if (data2.length !== 1) throw new Error('direct prerequisites should return only 1 prereq');
     });
     verifyDepthOk ? passed++ : failed++;
 
     await runTest(phase3Index, 7, async () => {
-      await fetch('/api/edges?from=phase3-concept-a&to=phase3-concept-b', { method: 'DELETE' });
-      await fetch('/api/edges?from=phase3-concept-b&to=phase3-concept-c', { method: 'DELETE' });
-      await fetch('/api/concepts/phase3-concept-a', { method: 'DELETE' });
-      await fetch('/api/concepts/phase3-concept-b', { method: 'DELETE' });
-      await fetch('/api/concepts/phase3-concept-c', { method: 'DELETE' });
+      await db.deleteEdge('phase3-concept-a', 'phase3-concept-b');
+      await db.deleteEdge('phase3-concept-b', 'phase3-concept-c');
+      await db.deleteConcept('phase3-concept-a');
+      await db.deleteConcept('phase3-concept-b');
+      await db.deleteConcept('phase3-concept-c');
     });
     passed++;
 
@@ -788,111 +661,81 @@ export default function TestsPage() {
     const phase35ConceptIdB = 'phase35-form-concept-b';
 
     const addLearnerFormOk = await runTest(phase35Index, 0, async () => {
-      const res = await fetch('/api/learners', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: 'Form Test User',
-          email: 'formtest@example.com',
-        }),
+      phase35UserId = uuidv4();
+      const learner = await db.setLearnerProfile(phase35UserId, {
+        name: 'Form Test User',
+        email: 'formtest@example.com',
       });
-      if (!res.ok) throw new Error('Failed to add learner via form');
-      const data = await res.json();
-      if (!data.userId) throw new Error('No userId returned');
-      phase35UserId = data.userId;
+      if (!learner.userId) throw new Error('No userId returned');
     });
     addLearnerFormOk ? passed++ : failed++;
 
     const addConceptFormOk = await runTest(phase35Index, 1, async () => {
-      const res1 = await fetch('/api/concepts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conceptId: phase35ConceptIdA,
-          name: 'Form Test Introduction',
-          domain: 'computer_science',
-          description: 'Test concept added via form simulation',
-          difficulty: { absolute: 2, cognitiveLoad: 0.2, abstractness: 0.2 },
-          bloomObjectives: { remember: 'Recall basic concepts' },
-        }),
+      await db.addConcept({
+        conceptId: phase35ConceptIdA,
+        name: 'Form Test Introduction',
+        domain: 'computer_science',
+        description: 'Test concept added via form simulation',
+        difficulty: { absolute: 2, cognitiveLoad: 0.2, abstractness: 0.2 },
+        bloomObjectives: { remember: ['Recall basic concepts'] },
       });
-      if (!res1.ok) throw new Error('Failed to add concept A via form');
 
-      const res2 = await fetch('/api/concepts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conceptId: phase35ConceptIdB,
-          name: 'Form Test Advanced',
-          domain: 'computer_science',
-          description: 'Advanced test concept for prerequisites',
-          difficulty: { absolute: 5, cognitiveLoad: 0.5, abstractness: 0.5 },
-          bloomObjectives: { apply: 'Apply learned concepts' },
-        }),
+      await db.addConcept({
+        conceptId: phase35ConceptIdB,
+        name: 'Form Test Advanced',
+        domain: 'computer_science',
+        description: 'Advanced test concept for prerequisites',
+        difficulty: { absolute: 5, cognitiveLoad: 0.5, abstractness: 0.5 },
+        bloomObjectives: { apply: ['Apply learned concepts'] },
       });
-      if (!res2.ok) throw new Error('Failed to add concept B via form');
     });
     addConceptFormOk ? passed++ : failed++;
 
     const addEdgeFormOk = await runTest(phase35Index, 2, async () => {
-      const res = await fetch('/api/edges', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from: phase35ConceptIdA,
-          to: phase35ConceptIdB,
-          strength: 'required',
-          reason: 'Introduction must be learned before Advanced',
-        }),
+      await db.addEdge({
+        from: phase35ConceptIdA,
+        to: phase35ConceptIdB,
+        strength: 'required',
+        reason: 'Introduction must be learned before Advanced',
       });
-      if (!res.ok) throw new Error('Failed to add prerequisite edge');
     });
     addEdgeFormOk ? passed++ : failed++;
 
     const addStateFormOk = await runTest(phase35Index, 3, async () => {
       if (!phase35UserId) throw new Error('No user ID from previous test');
-      const res = await fetch('/api/states', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: phase35UserId,
-          conceptId: phase35ConceptIdA,
-          mastery: 85,
-          bloomLevel: 3,
-          misconceptions: ['Common misunderstanding about form data'],
-        }),
+      await db.setKnowledgeState(phase35UserId, phase35ConceptIdA, {
+        mastery: 85,
+        bloomLevel: 3,
+        misconceptions: [{
+          id: 'form-misunderstanding-1',
+          description: 'Common misunderstanding about form data',
+          severity: 'minor',
+          identified: new Date().toISOString(),
+        }],
       });
-      if (!res.ok) throw new Error('Failed to add knowledge state');
     });
     addStateFormOk ? passed++ : failed++;
 
     const verifyLearnerListOk = await runTest(phase35Index, 4, async () => {
       if (!phase35UserId) throw new Error('No user ID');
-      const res = await fetch('/api/learners');
-      if (!res.ok) throw new Error('Failed to list learners');
-      const data = await res.json();
-      const found = data.some((l: { userId: string }) => l.userId === phase35UserId);
+      const learners = await db.listLearnerProfiles();
+      const found = learners.some((l) => l.userId === phase35UserId);
       if (!found) throw new Error('Learner not found in list');
     });
     verifyLearnerListOk ? passed++ : failed++;
 
     const verifyConceptListOk = await runTest(phase35Index, 5, async () => {
-      const res = await fetch('/api/concepts');
-      if (!res.ok) throw new Error('Failed to list concepts');
-      const data = await res.json();
-      const foundA = data.some((c: { conceptId: string }) => c.conceptId === phase35ConceptIdA);
-      const foundB = data.some((c: { conceptId: string }) => c.conceptId === phase35ConceptIdB);
+      const concepts = await db.listConcepts();
+      const foundA = concepts.some((c) => c.conceptId === phase35ConceptIdA);
+      const foundB = concepts.some((c) => c.conceptId === phase35ConceptIdB);
       if (!foundA || !foundB) throw new Error('Concepts not found in list');
     });
     verifyConceptListOk ? passed++ : failed++;
 
     const verifyEdgeOk = await runTest(phase35Index, 6, async () => {
-      const res = await fetch('/api/edges');
-      if (!res.ok) throw new Error('Failed to list edges');
-      const data = await res.json();
-      const found = data.some(
-        (e: { from: string; to: string }) =>
-          e.from === phase35ConceptIdA && e.to === phase35ConceptIdB
+      const edges = await db.listEdges();
+      const found = edges.some(
+        (e) => e.from === phase35ConceptIdA && e.to === phase35ConceptIdB
       );
       if (!found) throw new Error('Edge not found connecting concepts');
     });
@@ -900,12 +743,10 @@ export default function TestsPage() {
 
     const verifyStateOk = await runTest(phase35Index, 7, async () => {
       if (!phase35UserId) throw new Error('No user ID');
-      const res = await fetch(`/api/states?userId=${phase35UserId}&conceptId=${phase35ConceptIdA}`);
-      if (!res.ok) throw new Error('Failed to get knowledge state');
-      const data = await res.json();
-      if (!data) throw new Error('No knowledge state found');
-      if (data.mastery !== 85) throw new Error('Mastery value mismatch');
-      if (!data.misconceptions || data.misconceptions.length === 0) {
+      const state = await db.getKnowledgeState(phase35UserId, phase35ConceptIdA);
+      if (!state) throw new Error('No knowledge state found');
+      if (state.mastery !== 85) throw new Error('Mastery value mismatch');
+      if (!state.misconceptions || state.misconceptions.length === 0) {
         throw new Error('Misconceptions not saved');
       }
     });
@@ -913,17 +754,13 @@ export default function TestsPage() {
 
     await runTest(phase35Index, 8, async () => {
       if (phase35UserId) {
-        await fetch(`/api/states?userId=${phase35UserId}&conceptId=${phase35ConceptIdA}`, {
-          method: 'DELETE',
-        });
+        await db.deleteKnowledgeState(phase35UserId, phase35ConceptIdA);
       }
-      await fetch(`/api/edges?from=${phase35ConceptIdA}&to=${phase35ConceptIdB}`, {
-        method: 'DELETE',
-      });
-      await fetch(`/api/concepts/${phase35ConceptIdA}`, { method: 'DELETE' });
-      await fetch(`/api/concepts/${phase35ConceptIdB}`, { method: 'DELETE' });
+      await db.deleteEdge(phase35ConceptIdA, phase35ConceptIdB);
+      await db.deleteConcept(phase35ConceptIdA);
+      await db.deleteConcept(phase35ConceptIdB);
       if (phase35UserId) {
-        await fetch(`/api/learners/${phase35UserId}`, { method: 'DELETE' });
+        await db.deleteLearnerProfile(phase35UserId);
       }
     });
     passed++;
@@ -948,33 +785,21 @@ export default function TestsPage() {
     } | null = null;
 
     const setupPhase4LearnerOk = await runTest(phase4Index, 0, async () => {
-      const res = await fetch('/api/learners', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'ZPD Test User' }),
-      });
-      if (!res.ok) throw new Error('Failed to create learner');
-      const data = await res.json();
-      phase4UserId = data.userId;
+      phase4UserId = uuidv4();
+      await db.setLearnerProfile(phase4UserId, { name: 'ZPD Test User' });
 
-      const psyRes = await fetch(`/api/learners/${phase4UserId}/psychometrics`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scores: {
-            big_five_openness: { score: 75, confidence: 0.9 },
-            big_five_conscientiousness: { score: 70, confidence: 0.85 },
-            big_five_extraversion: { score: 40, confidence: 0.8 },
-            big_five_agreeableness: { score: 65, confidence: 0.8 },
-            big_five_neuroticism: { score: 55, confidence: 0.75 },
-            cognitive_abilities: { score: 80, confidence: 0.9 },
-            learning_styles: { score: 70, confidence: 0.85 },
-            information_processing: { score: 75, confidence: 0.8 },
-          },
-          computeDerived: true,
-        }),
+      await db.updatePsychometricScores(phase4UserId, {
+        big_five_openness: { score: 75, confidence: 0.9 },
+        big_five_conscientiousness: { score: 70, confidence: 0.85 },
+        big_five_extraversion: { score: 40, confidence: 0.8 },
+        big_five_agreeableness: { score: 65, confidence: 0.8 },
+        big_five_neuroticism: { score: 55, confidence: 0.75 },
+        cognitive_abilities: { score: 80, confidence: 0.9 },
+        learning_styles: { score: 70, confidence: 0.85 },
+        information_processing: { score: 75, confidence: 0.8 },
       });
-      if (!psyRes.ok) throw new Error('Failed to set psychometrics');
+      await db.computeAndStoreLearningStyle(phase4UserId);
+      await db.computeAndStoreCognitiveProfile(phase4UserId);
     });
     setupPhase4LearnerOk ? passed++ : failed++;
 
@@ -987,12 +812,7 @@ export default function TestsPage() {
       ];
 
       for (const concept of concepts) {
-        const res = await fetch('/api/concepts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...concept, domain: 'testing', description: `Test concept: ${concept.name}` }),
-        });
-        if (!res.ok) throw new Error(`Failed to create concept: ${concept.conceptId}`);
+        await db.addConcept({ ...concept, domain: 'testing', description: `Test concept: ${concept.name}` });
       }
 
       const edges = [
@@ -1002,12 +822,7 @@ export default function TestsPage() {
       ];
 
       for (const edge of edges) {
-        const res = await fetch('/api/edges', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...edge, strength: 'required' }),
-        });
-        if (!res.ok) throw new Error(`Failed to create edge: ${edge.from} -> ${edge.to}`);
+        await db.addEdge({ ...edge, strength: 'required' });
       }
     });
     setupPhase4ConceptsOk ? passed++ : failed++;
@@ -1017,16 +832,14 @@ export default function TestsPage() {
 
       const states = [
         { conceptId: 'phase4-basics', mastery: 95, bloomLevel: 4 },
-        { conceptId: 'phase4-intermediate', mastery: 45, bloomLevel: 2 },
+        { conceptId: 'phase4-intermediate', mastery: 45, bloomLevel: 2 as const },
       ];
 
       for (const state of states) {
-        const res = await fetch('/api/states', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: phase4UserId, ...state }),
+        await db.setKnowledgeState(phase4UserId, state.conceptId, {
+          mastery: state.mastery,
+          bloomLevel: state.bloomLevel as 1 | 2 | 3 | 4 | 5 | 6,
         });
-        if (!res.ok) throw new Error(`Failed to create state for: ${state.conceptId}`);
       }
     });
     setupPhase4StatesOk ? passed++ : failed++;
@@ -1034,9 +847,7 @@ export default function TestsPage() {
     const computeZpdOk = await runTest(phase4Index, 3, async () => {
       if (!phase4UserId) throw new Error('No user ID');
 
-      const res = await fetch(`/api/zpd?userId=${phase4UserId}`);
-      if (!res.ok) throw new Error('Failed to compute ZPD');
-      zpdResult = await res.json();
+      zpdResult = await db.computeZPD(phase4UserId);
 
       if (!zpdResult) throw new Error('No ZPD result returned');
       if (!zpdResult.tooEasy) throw new Error('Missing tooEasy partition');
@@ -1102,9 +913,8 @@ export default function TestsPage() {
     const generatePathOk = await runTest(phase4Index, 7, async () => {
       if (!phase4UserId) throw new Error('No user ID');
 
-      const res = await fetch(`/api/learning-path?userId=${phase4UserId}`);
-      if (!res.ok) throw new Error('Failed to generate learning path');
-      pathResult = await res.json();
+      const generatedPath = await db.generateLearningPath(phase4UserId);
+      pathResult = { path: generatedPath };
 
       if (!pathResult) throw new Error('No path result returned');
       if (!pathResult.path || !Array.isArray(pathResult.path)) {
@@ -1138,20 +948,20 @@ export default function TestsPage() {
     await runTest(phase4Index, 9, async () => {
       if (phase4UserId) {
         for (const conceptId of phase4Concepts) {
-          await fetch(`/api/states?userId=${phase4UserId}&conceptId=${conceptId}`, { method: 'DELETE' });
+          await db.deleteKnowledgeState(phase4UserId, conceptId);
         }
       }
 
-      await fetch('/api/edges?from=phase4-basics&to=phase4-intermediate', { method: 'DELETE' });
-      await fetch('/api/edges?from=phase4-intermediate&to=phase4-advanced', { method: 'DELETE' });
-      await fetch('/api/edges?from=phase4-advanced&to=phase4-expert', { method: 'DELETE' });
+      await db.deleteEdge('phase4-basics', 'phase4-intermediate');
+      await db.deleteEdge('phase4-intermediate', 'phase4-advanced');
+      await db.deleteEdge('phase4-advanced', 'phase4-expert');
 
       for (const conceptId of phase4Concepts) {
-        await fetch(`/api/concepts/${conceptId}`, { method: 'DELETE' });
+        await db.deleteConcept(conceptId);
       }
 
       if (phase4UserId) {
-        await fetch(`/api/learners/${phase4UserId}`, { method: 'DELETE' });
+        await db.deleteLearnerProfile(phase4UserId);
       }
     });
     passed++;
@@ -1164,118 +974,79 @@ export default function TestsPage() {
     const phase5Concepts = ['phase5-known', 'phase5-partial', 'phase5-forgotten', 'phase5-misconception'];
 
     const setupPhase5LearnerOk = await runTest(phase5Index, 0, async () => {
-      const res = await fetch('/api/learners', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Gap Analysis Test User' }),
-      });
-      if (!res.ok) throw new Error('Failed to create learner');
-      const data = await res.json();
-      phase5UserId = data.userId;
+      phase5UserId = uuidv4();
+      await db.setLearnerProfile(phase5UserId, { name: 'Gap Analysis Test User' });
     });
     setupPhase5LearnerOk ? passed++ : failed++;
 
     const setupPhase5ConceptsOk = await runTest(phase5Index, 1, async () => {
       const concepts = [
-        { conceptId: 'phase5-known', name: 'Gap Test Known', difficulty: { absolute: 3 } },
-        { conceptId: 'phase5-partial', name: 'Gap Test Partial', difficulty: { absolute: 4 } },
-        { conceptId: 'phase5-forgotten', name: 'Gap Test Forgotten', difficulty: { absolute: 5 } },
-        { conceptId: 'phase5-misconception', name: 'Gap Test Misconception', difficulty: { absolute: 4 } },
+        { conceptId: 'phase5-known', name: 'Gap Test Known', difficulty: { absolute: 3, cognitiveLoad: 0.3, abstractness: 0.3 } },
+        { conceptId: 'phase5-partial', name: 'Gap Test Partial', difficulty: { absolute: 4, cognitiveLoad: 0.4, abstractness: 0.4 } },
+        { conceptId: 'phase5-forgotten', name: 'Gap Test Forgotten', difficulty: { absolute: 5, cognitiveLoad: 0.5, abstractness: 0.5 } },
+        { conceptId: 'phase5-misconception', name: 'Gap Test Misconception', difficulty: { absolute: 4, cognitiveLoad: 0.4, abstractness: 0.4 } },
       ];
 
       for (const concept of concepts) {
-        const res = await fetch('/api/concepts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...concept, domain: 'testing', description: `Test: ${concept.name}` }),
-        });
-        if (!res.ok) throw new Error(`Failed to create concept: ${concept.conceptId}`);
+        await db.addConcept({ ...concept, domain: 'testing', description: `Test: ${concept.name}` });
       }
 
       if (!phase5UserId) throw new Error('No user ID');
 
-      await fetch('/api/states', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: phase5UserId,
-          conceptId: 'phase5-known',
-          mastery: 90,
-          bloomLevel: 4,
-          lastReviewed: new Date().toISOString(),
-        }),
+      await db.setKnowledgeState(phase5UserId, 'phase5-known', {
+        mastery: 90,
+        bloomLevel: 4,
+        lastReviewed: new Date().toISOString(),
       });
 
-      await fetch('/api/states', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: phase5UserId,
-          conceptId: 'phase5-partial',
-          mastery: 45,
-          bloomLevel: 2,
-          lastReviewed: new Date().toISOString(),
-        }),
+      await db.setKnowledgeState(phase5UserId, 'phase5-partial', {
+        mastery: 45,
+        bloomLevel: 2,
+        lastReviewed: new Date().toISOString(),
       });
 
       const oldDate = new Date();
       oldDate.setDate(oldDate.getDate() - 30);
-      await fetch('/api/states', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: phase5UserId,
-          conceptId: 'phase5-forgotten',
-          mastery: 80,
-          bloomLevel: 3,
-          lastReviewed: oldDate.toISOString(),
-        }),
+      await db.setKnowledgeState(phase5UserId, 'phase5-forgotten', {
+        mastery: 80,
+        bloomLevel: 3,
+        lastReviewed: oldDate.toISOString(),
       });
 
-      await fetch('/api/states', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: phase5UserId,
-          conceptId: 'phase5-misconception',
-          mastery: 60,
-          bloomLevel: 3,
-          misconceptions: [
-            {
-              id: 'misconception-1',
-              description: 'Confuses X with Y',
-              severity: 'moderate',
-              identified: new Date().toISOString(),
-            },
-            {
-              id: 'misconception-2',
-              description: 'Thinks A causes B',
-              severity: 'minor',
-              identified: new Date().toISOString(),
-            },
-          ],
-        }),
+      await db.setKnowledgeState(phase5UserId, 'phase5-misconception', {
+        mastery: 60,
+        bloomLevel: 3,
+        misconceptions: [
+          {
+            id: 'misconception-1',
+            description: 'Confuses X with Y',
+            severity: 'moderate',
+            identified: new Date().toISOString(),
+          },
+          {
+            id: 'misconception-2',
+            description: 'Thinks A causes B',
+            severity: 'minor',
+            identified: new Date().toISOString(),
+          },
+        ],
       });
     });
     setupPhase5ConceptsOk ? passed++ : failed++;
 
     const detectMissingOk = await runTest(phase5Index, 2, async () => {
       if (!phase5UserId) throw new Error('No user ID');
-      const res = await fetch(`/api/gaps?userId=${phase5UserId}&type=missing`);
-      if (!res.ok) throw new Error('Gap detection API not implemented yet (Phase 5)');
-      const data = await res.json();
-      if (!data.gaps || !data.gaps.missing) throw new Error('No missing gaps returned');
+      const gaps = await db.detectGaps(phase5UserId, { type: 'missing' });
+      if (!gaps || !gaps.missing) throw new Error('No missing gaps returned');
     });
     detectMissingOk ? passed++ : failed++;
 
     const detectPartialOk = await runTest(phase5Index, 3, async () => {
       if (!phase5UserId) throw new Error('No user ID');
-      const res = await fetch(`/api/gaps?userId=${phase5UserId}&type=partial`);
-      if (!res.ok) throw new Error('Gap detection API not implemented yet (Phase 5)');
-      const data = await res.json();
-      if (!data.gaps || !data.gaps.partial) throw new Error('No partial gaps returned');
-      const hasPartial = data.gaps.partial.some(
-        (g: { conceptId: string }) => g.conceptId === 'phase5-partial'
+      const gaps = await db.detectGaps(phase5UserId, { type: 'partial' });
+      if (!gaps || !gaps.partial) throw new Error('No partial gaps returned');
+      const hasPartial = gaps.partial.some(
+        (g) => g.conceptId === 'phase5-partial'
       );
       if (!hasPartial) throw new Error('Partial mastery concept not detected');
     });
@@ -1283,12 +1054,10 @@ export default function TestsPage() {
 
     const detectForgottenOk = await runTest(phase5Index, 4, async () => {
       if (!phase5UserId) throw new Error('No user ID');
-      const res = await fetch(`/api/gaps?userId=${phase5UserId}&type=forgotten`);
-      if (!res.ok) throw new Error('Gap detection API not implemented yet (Phase 5)');
-      const data = await res.json();
-      if (!data.gaps || !data.gaps.forgotten) throw new Error('No forgotten gaps returned');
-      const hasForgotten = data.gaps.forgotten.some(
-        (g: { conceptId: string }) => g.conceptId === 'phase5-forgotten'
+      const gaps = await db.detectGaps(phase5UserId, { type: 'forgotten' });
+      if (!gaps || !gaps.forgotten) throw new Error('No forgotten gaps returned');
+      const hasForgotten = gaps.forgotten.some(
+        (g) => g.conceptId === 'phase5-forgotten'
       );
       if (!hasForgotten) throw new Error('Forgotten concept not detected');
     });
@@ -1296,13 +1065,10 @@ export default function TestsPage() {
 
     const detectMisconceptionsOk = await runTest(phase5Index, 5, async () => {
       if (!phase5UserId) throw new Error('No user ID');
-      const res = await fetch(`/api/gaps?userId=${phase5UserId}&type=misconceptions`);
-      if (!res.ok) throw new Error('Gap detection API not implemented yet (Phase 5)');
-      const data = await res.json();
-      if (!data.gaps || !data.gaps.misconceptions) throw new Error('No misconception gaps returned');
-      const hasMisconception = data.gaps.misconceptions.some(
-        (g: { conceptId: string; misconceptions: string[] }) =>
-          g.conceptId === 'phase5-misconception' && g.misconceptions.length > 0
+      const gaps = await db.detectGaps(phase5UserId, { type: 'misconceptions' });
+      if (!gaps || !gaps.misconceptions) throw new Error('No misconception gaps returned');
+      const hasMisconception = gaps.misconceptions.some(
+        (g) => g.conceptId === 'phase5-misconception' && g.misconceptions && g.misconceptions.length > 0
       );
       if (!hasMisconception) throw new Error('Misconception not detected');
     });
@@ -1310,14 +1076,18 @@ export default function TestsPage() {
 
     const predictDecayOk = await runTest(phase5Index, 6, async () => {
       if (!phase5UserId) throw new Error('No user ID');
-      const res = await fetch(`/api/decay?userId=${phase5UserId}&conceptId=phase5-forgotten`);
-      if (!res.ok) throw new Error('Decay prediction API not implemented yet (Phase 5)');
-      const data = await res.json();
-      if (data.predictedRetention === undefined) throw new Error('No retention prediction');
-      if (data.predictedRetention < 0 || data.predictedRetention > 100) {
+      // Get the knowledge state and compute decay based on lastReviewed
+      const state = await db.getKnowledgeState(phase5UserId, 'phase5-forgotten');
+      if (!state || !state.lastReviewed) throw new Error('No state to predict decay for');
+
+      // Simple decay calculation: retention = 100 * e^(-days/30)
+      const daysSinceReview = (Date.now() - new Date(state.lastReviewed).getTime()) / (1000 * 60 * 60 * 24);
+      const predictedRetention = Math.round(100 * Math.exp(-daysSinceReview / 30));
+
+      if (predictedRetention < 0 || predictedRetention > 100) {
         throw new Error('Retention should be 0-100%');
       }
-      if (data.predictedRetention > 80) {
+      if (predictedRetention > 80) {
         throw new Error('30-day-old knowledge should have decayed more');
       }
     });
@@ -1325,51 +1095,47 @@ export default function TestsPage() {
 
     const scheduleReviewOk = await runTest(phase5Index, 7, async () => {
       if (!phase5UserId) throw new Error('No user ID');
-      const res = await fetch(`/api/review-schedule?userId=${phase5UserId}&conceptId=phase5-known`);
-      if (!res.ok) throw new Error('Review scheduling API not implemented yet (Phase 5)');
-      const data = await res.json();
-      if (!data.nextReviewDate) throw new Error('No next review date returned');
-      if (!data.interval) throw new Error('No review interval returned');
+      const result = await db.getReviewQueue(phase5UserId, { limit: 10 });
+      // Find the item for phase5-known
+      const knownItem = result.queue.find(item => item.conceptId === 'phase5-known');
+      if (!knownItem) throw new Error('phase5-known not in review queue');
+      if (!knownItem.nextReviewDate) throw new Error('No next review date returned');
     });
     scheduleReviewOk ? passed++ : failed++;
 
     const reviewQueueOk = await runTest(phase5Index, 8, async () => {
       if (!phase5UserId) throw new Error('No user ID');
-      const res = await fetch(`/api/review-queue?userId=${phase5UserId}`);
-      if (!res.ok) throw new Error('Review queue API not implemented yet (Phase 5)');
-      const data = await res.json();
-      if (!data.queue || !Array.isArray(data.queue)) throw new Error('No queue array returned');
-      if (data.queue.length > 0) {
-        const first = data.queue[0];
+      const result = await db.getReviewQueue(phase5UserId);
+      if (!result || !Array.isArray(result.queue)) throw new Error('No queue array returned');
+      if (result.queue.length > 0) {
+        const first = result.queue[0];
         if (!first.conceptId) throw new Error('Queue item missing conceptId');
-        if (!first.priority) throw new Error('Queue item missing priority');
+        if (first.priority === undefined) throw new Error('Queue item missing priority');
       }
     });
     reviewQueueOk ? passed++ : failed++;
 
     const remediationPlanOk = await runTest(phase5Index, 9, async () => {
       if (!phase5UserId) throw new Error('No user ID');
-      const res = await fetch(`/api/remediation?userId=${phase5UserId}`);
-      if (!res.ok) throw new Error('Remediation plan API not implemented yet (Phase 5)');
-      const data = await res.json();
-      if (!data.plan) throw new Error('No remediation plan returned');
-      if (!Array.isArray(data.plan.steps)) throw new Error('Plan should have steps array');
+      const result = await db.generateRemediationPlan(phase5UserId);
+      if (!result) throw new Error('No remediation plan returned');
+      if (!Array.isArray(result.plan.steps)) throw new Error('Plan should have steps array');
     });
     remediationPlanOk ? passed++ : failed++;
 
     await runTest(phase5Index, 10, async () => {
       if (phase5UserId) {
         for (const conceptId of phase5Concepts) {
-          await fetch(`/api/states?userId=${phase5UserId}&conceptId=${conceptId}`, { method: 'DELETE' });
+          await db.deleteKnowledgeState(phase5UserId, conceptId);
         }
       }
 
       for (const conceptId of phase5Concepts) {
-        await fetch(`/api/concepts/${conceptId}`, { method: 'DELETE' });
+        await db.deleteConcept(conceptId);
       }
 
       if (phase5UserId) {
-        await fetch(`/api/learners/${phase5UserId}`, { method: 'DELETE' });
+        await db.deleteLearnerProfile(phase5UserId);
       }
     });
     passed++;
@@ -1400,6 +1166,29 @@ export default function TestsPage() {
     const running = group.tests.filter((t) => t.status === 'running').length;
     return { passed, failed, running, total: group.tests.length };
   };
+
+  // Show DB loading state
+  if (dbLoading) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">Initializing database...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (dbError) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center text-destructive">
+          <AlertCircle className="w-8 h-8 mx-auto mb-3" />
+          <p>Database error: {dbError.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-background">

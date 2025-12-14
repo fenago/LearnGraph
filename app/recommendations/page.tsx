@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -15,9 +15,12 @@ import {
   Zap,
   Brain,
   Route,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import { Sidebar } from '../components/Sidebar';
 import { cn } from '@/lib/utils';
+import { useLearners, useDB } from '@/lib/DBContext';
 
 interface ScaffoldingStrategy {
   type: string;
@@ -115,45 +118,100 @@ const tabVariants = {
 };
 
 export default function RecommendationsPage() {
-  const [learners, setLearners] = useState<Learner[]>([]);
+  const { db, isLoading: dbLoading, error: dbError, isReady } = useDB();
+  const { learners } = useLearners();
   const [selectedLearner, setSelectedLearner] = useState<string>('');
   const [zpd, setZpd] = useState<ZPDResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'recommendations' | 'zones' | 'path'>('recommendations');
 
+  // Auto-select first learner when available
   useEffect(() => {
-    fetch('/api/learners')
-      .then((res) => res.json())
-      .then((data) => {
-        setLearners(data);
-        if (data.length > 0) {
-          setSelectedLearner(data[0].userId);
-        }
-      })
-      .catch((err) => console.error('Failed to load learners:', err));
-  }, []);
+    if (learners.length > 0 && !selectedLearner) {
+      setSelectedLearner(learners[0].userId);
+    }
+  }, [learners, selectedLearner]);
 
-  useEffect(() => {
-    if (!selectedLearner) return;
+  const computeZPD = useCallback(async () => {
+    if (!db || !isReady || !selectedLearner) return;
 
     setLoading(true);
     setError(null);
 
-    fetch(`/api/zpd?userId=${encodeURIComponent(selectedLearner)}&limit=10`)
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to compute recommendations');
-        return res.json();
-      })
-      .then((data) => {
-        setZpd(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
+    try {
+      const startTime = Date.now();
+      // computeZPD returns everything we need: recommendations, psychometricAdjustments, zones
+      const zpdResult = await db.computeZPD(selectedLearner, { limit: 10 });
+      const computationTimeMs = Date.now() - startTime;
+
+      // Generate learning path
+      const path = await db.generateLearningPath(selectedLearner);
+
+      // Map database result to local interface format
+      const mappedRecommendations: ZPDRecommendation[] = zpdResult.recommendations.map(rec => ({
+        concept: {
+          conceptId: rec.concept.conceptId,
+          name: rec.concept.name || rec.concept.conceptId,
+          domain: rec.concept.domain || 'general',
+          description: rec.concept.description || '',
+          difficulty: {
+            absolute: typeof rec.concept.difficulty === 'number' ? rec.concept.difficulty : rec.concept.difficulty?.absolute || 5,
+            cognitiveLoad: rec.concept.difficulty?.cognitiveLoad || 5,
+            abstractness: rec.concept.difficulty?.abstractness || 5,
+          },
+        },
+        readinessScore: rec.readinessScore,
+        estimatedMasteryTime: rec.estimatedMasteryTime,
+        psychometricMatch: rec.psychometricMatch,
+        scaffoldingStrategies: rec.scaffoldingStrategies || [],
+        reasons: rec.reasons || [],
+        prerequisiteChain: rec.prerequisiteChain || [],
+      }));
+
+      // Map zoned concepts
+      const mapZonedConcept = (zc: typeof zpdResult.zpd[0]): ZonedConcept => ({
+        concept: {
+          conceptId: zc.concept.conceptId,
+          name: zc.concept.name || zc.concept.conceptId,
+          domain: zc.concept.domain || 'general',
+          description: zc.concept.description || '',
+          difficulty: {
+            absolute: typeof zc.concept.difficulty === 'number' ? zc.concept.difficulty : zc.concept.difficulty?.absolute || 5,
+            cognitiveLoad: zc.concept.difficulty?.cognitiveLoad || 5,
+            abstractness: zc.concept.difficulty?.abstractness || 5,
+          },
+        },
+        zone: zc.zone as 'too_easy' | 'zpd' | 'too_hard',
+        readiness: zc.readiness,
+        prerequisitesMet: zc.prerequisitesMet,
+        missingPrerequisites: zc.missingPrerequisites || [],
+        reason: zc.reason || '',
       });
-  }, [selectedLearner]);
+
+      setZpd({
+        userId: selectedLearner,
+        computedAt: zpdResult.computedAt || new Date().toISOString(),
+        computationTimeMs,
+        tooEasy: zpdResult.tooEasy.map(mapZonedConcept),
+        zpd: zpdResult.zpd.map(mapZonedConcept),
+        tooHard: zpdResult.tooHard.map(mapZonedConcept),
+        recommendations: mappedRecommendations,
+        psychometricAdjustments: zpdResult.psychometricAdjustments,
+        suggestedPath: path.map(item => item.conceptId),
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to compute recommendations');
+    } finally {
+      setLoading(false);
+    }
+  }, [db, isReady, selectedLearner]);
+
+  useEffect(() => {
+    if (isReady && selectedLearner) {
+      computeZPD();
+    }
+  }, [isReady, selectedLearner, computeZPD]);
 
   const getDifficultyColor = (difficulty: number) => {
     if (difficulty <= 3) return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400';
@@ -173,6 +231,28 @@ export default function RecommendationsPage() {
     const mins = minutes % 60;
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   };
+
+  if (dbLoading) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">Initializing database...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (dbError) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center text-destructive">
+          <AlertCircle className="w-8 h-8 mx-auto mb-3" />
+          <p>Database error: {dbError.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-background">

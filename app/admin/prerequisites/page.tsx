@@ -1,23 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from '@/app/components/Sidebar';
 import { EtherealShadow } from '@/components/ui/ethereal-shadow';
 import { Plus, Trash2, X, Save, ArrowRight, GitBranch, AlertCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface PrerequisiteEdge {
-  from: string;
-  to: string;
-  strength: 'required' | 'recommended' | 'helpful';
-  reason?: string;
-}
-
-interface ConceptNode {
-  conceptId: string;
-  name: string;
-}
+import { useEdges, useConcepts, useDB } from '@/lib/DBContext';
 
 const STRENGTH_OPTIONS = [
   { value: 'required', label: 'Required', color: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20' },
@@ -43,9 +32,9 @@ const itemVariants = {
 };
 
 export default function PrerequisitesPage() {
-  const [edges, setEdges] = useState<PrerequisiteEdge[]>([]);
-  const [concepts, setConcepts] = useState<ConceptNode[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { isLoading: dbLoading, error: dbError } = useDB();
+  const { edges, loading: edgesLoading, createEdge, deleteEdge } = useEdges();
+  const { concepts, loading: conceptsLoading } = useConcepts();
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     from: '',
@@ -55,29 +44,7 @@ export default function PrerequisitesPage() {
   });
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    Promise.all([fetchEdges(), fetchConcepts()]).then(() => setLoading(false));
-  }, []);
-
-  async function fetchEdges() {
-    try {
-      const res = await fetch('/api/edges');
-      const data = await res.json();
-      setEdges(data);
-    } catch (err) {
-      setError('Failed to fetch prerequisites');
-    }
-  }
-
-  async function fetchConcepts() {
-    try {
-      const res = await fetch('/api/concepts');
-      const data = await res.json();
-      setConcepts(data);
-    } catch (err) {
-      setError('Failed to fetch concepts');
-    }
-  }
+  const loading = dbLoading || edgesLoading || conceptsLoading;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -89,20 +56,15 @@ export default function PrerequisitesPage() {
     }
 
     try {
-      const res = await fetch('/api/edges', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+      await createEdge({
+        from: formData.from,
+        to: formData.to,
+        strength: formData.strength,
+        reason: formData.reason || undefined,
       });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to create prerequisite');
-      }
 
       setShowForm(false);
       setFormData({ from: '', to: '', strength: 'required', reason: '' });
-      fetchEdges();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     }
@@ -112,9 +74,7 @@ export default function PrerequisitesPage() {
     if (!confirm('Are you sure you want to delete this prerequisite?')) return;
 
     try {
-      const res = await fetch(`/api/edges?from=${from}&to=${to}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete prerequisite');
-      fetchEdges();
+      await deleteEdge(from, to);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     }
@@ -128,6 +88,28 @@ export default function PrerequisitesPage() {
   function getStrengthStyle(strength: string): string {
     const option = STRENGTH_OPTIONS.find((o) => o.value === strength);
     return option?.color || 'bg-muted text-muted-foreground';
+  }
+
+  if (dbLoading) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">Initializing database...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (dbError) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center text-destructive">
+          <AlertCircle className="w-8 h-8 mx-auto mb-3" />
+          <p>Database error: {dbError.message}</p>
+        </div>
+      </div>
+    );
   }
 
   return (

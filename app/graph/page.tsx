@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ReactFlow,
@@ -22,6 +22,8 @@ import '@xyflow/react/dist/style.css';
 import { Sidebar } from '../components/Sidebar';
 import { EtherealShadow } from '@/components/ui/ethereal-shadow';
 import { cn } from '@/lib/utils';
+import { useLearners, useConcepts, useEdges, useDB } from '@/lib/DBContext';
+import type { KnowledgeState } from '@/src/models/types';
 import {
   RefreshCw,
   User,
@@ -33,6 +35,8 @@ import {
   Layers,
   Users,
   BarChart3,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 
 // Domain color mapping for visual differentiation
@@ -98,7 +102,15 @@ interface GraphData {
 
 interface LearnerProfile {
   userId: string;
-  name: string;
+  name?: string;
+}
+
+interface GraphOverlay {
+  userId: string;
+  learnerName: string;
+  masteryLevels: Record<string, number>;
+  zpdConcepts: string[];
+  forgottenConcepts: string[];
 }
 
 function ConceptNode({ data }: { data: Record<string, unknown> }) {
@@ -195,65 +207,118 @@ const nodeTypes: NodeTypes = {
 };
 
 export default function GraphPage() {
+  const { db, isLoading: dbLoading, error: dbError, isReady } = useDB();
+  const { learners } = useLearners();
+  const { concepts } = useConcepts();
+  const { edges: dbEdges } = useEdges();
+
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
-  const [learners, setLearners] = useState<LearnerProfile[]>([]);
   const [selectedLearner, setSelectedLearner] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ learners: 0, concepts: 0, edges: 0, knowledgeStates: 0 });
-  const [overlay, setOverlay] = useState<GraphData['overlay']>();
+  const [loading, setLoading] = useState(false);
+  const [knowledgeStatesCount, setKnowledgeStatesCount] = useState(0);
+  const [overlay, setOverlay] = useState<GraphOverlay | undefined>();
   const [selectedConcept, setSelectedConcept] = useState<ConceptDetails | null>(null);
 
-  useEffect(() => {
-    fetchLearners();
-  }, []);
+  // Compute stats from the hooks data
+  const stats = useMemo(() => ({
+    learners: learners.length,
+    concepts: concepts.length,
+    edges: dbEdges.length,
+    knowledgeStates: knowledgeStatesCount,
+  }), [learners.length, concepts.length, dbEdges.length, knowledgeStatesCount]);
 
-  useEffect(() => {
-    fetchGraph();
-  }, [selectedLearner]);
+  // Build graph when data changes
+  const buildGraph = useCallback(async () => {
+    if (!isReady || !db) return;
 
-  async function fetchLearners() {
+    setLoading(true);
     try {
-      const res = await fetch('/api/learners');
-      const data = await res.json();
-      setLearners(data);
-    } catch (err) {
-      console.error('Failed to fetch learners:', err);
-    }
-  }
+      // Count all knowledge states
+      let statesCount = 0;
+      for (const learner of learners) {
+        const states = await db.getLearnerKnowledgeStates(learner.userId);
+        statesCount += states.length;
+      }
+      setKnowledgeStatesCount(statesCount);
 
-  async function fetchGraph() {
-    try {
-      setLoading(true);
-      const url = selectedLearner
-        ? `/api/graph?userId=${selectedLearner}`
-        : '/api/graph';
-      const res = await fetch(url);
-      const data: GraphData = await res.json();
+      // Build overlay if a learner is selected
+      let graphOverlay: GraphOverlay | undefined;
+      if (selectedLearner) {
+        const selectedLearnerData = learners.find(l => l.userId === selectedLearner);
+        const learnerStates = await db.getLearnerKnowledgeStates(selectedLearner);
+        const masteryLevels: Record<string, number> = {};
+        const forgottenConcepts: string[] = [];
 
-      let processedNodes: Node[] = data.nodes.map((node) => ({
-        ...node,
+        for (const state of learnerStates) {
+          masteryLevels[state.conceptId] = state.mastery;
+          // Check for forgotten concepts (low predicted retention)
+          if (state.lastAccessed) {
+            const daysSinceReview = (Date.now() - new Date(state.lastAccessed).getTime()) / (1000 * 60 * 60 * 24);
+            const retention = Math.exp(-daysSinceReview / ((state.retentionStrength * 20) || 10));
+            if (retention < 0.5 && state.mastery > 40) {
+              forgottenConcepts.push(state.conceptId);
+            }
+          }
+        }
+
+        // Compute ZPD concepts
+        const zpdResult = await db.computeZPD(selectedLearner);
+        const zpdConcepts = zpdResult.zpd.map(z => z.concept.conceptId);
+
+        graphOverlay = {
+          userId: selectedLearner,
+          learnerName: selectedLearnerData?.name || selectedLearner,
+          masteryLevels,
+          zpdConcepts,
+          forgottenConcepts,
+        };
+      }
+      setOverlay(graphOverlay);
+
+      // Convert concepts to nodes
+      let processedNodes: Node[] = concepts.map((concept) => ({
+        id: concept.conceptId,
         type: 'concept',
+        position: { x: 0, y: 0 },
         data: {
-          ...node.data,
-          mastery: data.overlay?.masteryLevels?.[node.id],
-          isZPD: data.overlay?.zpdConcepts?.includes(node.id),
-          isForgotten: data.overlay?.forgottenConcepts?.includes(node.id),
+          label: concept.name,
+          domain: concept.domain || 'general',
+          subdomain: concept.subdomain,
+          description: concept.description,
+          difficulty: concept.difficulty,
+          mastery: graphOverlay?.masteryLevels?.[concept.conceptId],
+          isZPD: graphOverlay?.zpdConcepts?.includes(concept.conceptId),
+          isForgotten: graphOverlay?.forgottenConcepts?.includes(concept.conceptId),
         },
       }));
 
-      processedNodes = autoLayout(processedNodes, data.edges);
+      // Convert edges
+      const graphEdges: Edge[] = dbEdges.map((edge) => ({
+        id: `${edge.from}-${edge.to}`,
+        source: edge.from,
+        target: edge.to,
+        type: 'smoothstep',
+        markerEnd: { type: MarkerType.ArrowClosed },
+        style: { strokeWidth: 2 },
+      }));
+
+      processedNodes = autoLayout(processedNodes, graphEdges);
 
       setNodes(processedNodes);
-      setEdges(data.edges);
-      setStats(data.stats);
-      setOverlay(data.overlay ?? undefined);
+      setEdges(graphEdges);
     } catch (err) {
-      console.error('Failed to fetch graph:', err);
+      console.error('Failed to build graph:', err);
     } finally {
       setLoading(false);
     }
-  }
+  }, [db, isReady, concepts, dbEdges, learners, selectedLearner, setNodes, setEdges]);
+
+  useEffect(() => {
+    if (isReady) {
+      buildGraph();
+    }
+  }, [isReady, buildGraph]);
 
   function autoLayout(nodes: Node[], edges: Edge[]): Node[] {
     if (nodes.length === 0) return nodes;
@@ -372,6 +437,28 @@ export default function GraphPage() {
     { label: 'Knowledge States', value: stats.knowledgeStates, icon: BarChart3, gradient: 'from-amber-500 to-orange-500', bg: 'bg-amber-500/10' },
   ];
 
+  if (dbLoading) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">Initializing database...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (dbError) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center text-destructive">
+          <AlertCircle className="w-8 h-8 mx-auto mb-3" />
+          <p>Database error: {dbError.message}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
@@ -425,7 +512,7 @@ export default function GraphPage() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={fetchGraph}
+                onClick={buildGraph}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all"
               >
                 <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />

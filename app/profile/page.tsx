@@ -33,6 +33,7 @@ import {
   LayoutGrid,
   List,
   Send,
+  Loader2,
 } from 'lucide-react';
 import { Sidebar } from '../components/Sidebar';
 import { cn } from '@/lib/utils';
@@ -42,6 +43,8 @@ import {
   Assessment,
   getAssessment,
 } from '@/lib/assessments';
+import { useDB, useLearners } from '@/lib/DBContext';
+import { demoLearners } from '@/lib/demo-data';
 
 // =============================================================================
 // DOMAIN DEFINITIONS - Aligned with domain-reference.md (Source of Truth)
@@ -293,13 +296,22 @@ const itemVariants = {
 };
 
 export default function ProfilePage() {
-  const [learners, setLearners] = useState<LearnerProfile[]>([]);
+  // Database hooks
+  const { isLoading: dbLoading, error: dbError } = useDB();
+  const { learners: learnersData, loading: learnersLoading, getLearner, updateLearner, createLearner } = useLearners();
+
+  // Basic state
   const [selectedLearnerId, setSelectedLearnerId] = useState<string>('');
   const [profile, setProfile] = useState<LearnerProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Derived learners list - cast to any to allow partial profile data
+  const learners = learnersData as LearnerProfile[];
+
+  const loading = dbLoading || learnersLoading || profileLoading;
 
   // Mode selection
   const [activeMode, setActiveMode] = useState<ProfileMode>('view');
@@ -320,35 +332,22 @@ export default function ProfilePage() {
   // Batch answers for "all questions" view: domainId -> questionId -> answer
   const [batchAnswers, setBatchAnswers] = useState<Record<string, Record<string, number>>>({});
 
-  // Load learners on mount
+  // Select first learner when data loads
   useEffect(() => {
-    fetch('/api/learners')
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setLearners(data);
-          if (data.length > 0) {
-            setSelectedLearnerId(data[0].userId);
-          }
-        }
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error('Failed to load learners:', err);
-        setError('Failed to load learners');
-        setLoading(false);
-      });
-  }, []);
+    if (learners.length > 0 && !selectedLearnerId) {
+      setSelectedLearnerId(learners[0].userId);
+    }
+  }, [learners, selectedLearnerId]);
 
   // Load selected learner's profile
   useEffect(() => {
     if (!selectedLearnerId) return;
 
-    setLoading(true);
-    fetch(`/api/learners/${encodeURIComponent(selectedLearnerId)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && !data.error) {
+    const loadProfile = async () => {
+      setProfileLoading(true);
+      try {
+        const data = await getLearner(selectedLearnerId);
+        if (data) {
           setProfile(data);
 
           // Generate interpretations for scores that don't have them
@@ -370,23 +369,20 @@ export default function ProfilePage() {
           }
 
           setEditedScores(scoresWithInterpretations);
-          // Load saved profile mode
-          if (data.profileMode) {
-            setActiveMode(data.profileMode);
-            setModeConfirmed(true);
-          } else {
-            setActiveMode('view');
-            setModeConfirmed(false);
-          }
+          // Set default profile mode
+          setActiveMode('view');
+          setModeConfirmed(false);
         }
-        setLoading(false);
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error('Failed to load profile:', err);
         setError('Failed to load profile');
-        setLoading(false);
-      });
-  }, [selectedLearnerId]);
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, [selectedLearnerId, getLearner]);
 
   const toggleCategory = (categoryId: string) => {
     setExpandedCategories((prev) => {
@@ -486,21 +482,12 @@ export default function ProfilePage() {
     setSuccess(null);
 
     try {
-      const updatedProfile = {
-        ...profile,
+      const updatedData = {
         psychometricScores: editedScores,
         profileMode: activeMode !== 'view' ? activeMode : profile.profileMode,
       };
 
-      const res = await fetch(`/api/learners/${encodeURIComponent(profile.userId)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedProfile),
-      });
-
-      if (!res.ok) throw new Error('Failed to save profile');
-
-      const saved = await res.json();
+      const saved = await updateLearner(profile.userId, updatedData as any);
       setProfile(saved);
       setSuccess('Profile saved successfully!');
       setTimeout(() => setSuccess(null), 3000);
@@ -675,6 +662,30 @@ export default function ProfilePage() {
   // Check if we have sample users
   const hasNoUsers = !loading && learners.length === 0;
 
+  // Show DB loading state
+  if (dbLoading) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">Initializing database...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show DB error state
+  if (dbError) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center text-destructive">
+          <AlertCircle className="w-8 h-8 mx-auto mb-3" />
+          <p>Database error: {dbError.message}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
@@ -716,21 +727,30 @@ export default function ProfilePage() {
             </p>
             <button
               onClick={async () => {
-                setLoading(true);
+                setProfileLoading(true);
                 try {
-                  const res = await fetch('/api/seed-users', { method: 'POST' });
-                  const data = await res.json();
-                  if (data.success) {
-                    window.location.reload();
+                  // Seed demo learners directly using the hook
+                  for (const learner of demoLearners) {
+                    await createLearner(learner.userId, {
+                      name: learner.name,
+                      email: learner.email,
+                      learningStyle: learner.learningStyle as any,
+                      cognitiveProfile: learner.cognitiveProfile as any,
+                      psychometricScores: learner.psychometricScores as any,
+                      tags: learner.tags,
+                      notes: learner.notes,
+                    });
                   }
+                  setSuccess('Sample users created successfully!');
+                  setTimeout(() => setSuccess(null), 3000);
                 } catch (err) {
                   setError('Failed to create sample users');
                 }
-                setLoading(false);
+                setProfileLoading(false);
               }}
               className="px-4 py-2 rounded-lg bg-amber-500 text-white font-medium hover:bg-amber-600 transition-colors"
             >
-              Create 10 Sample Users
+              Create Sample Users
             </button>
           </motion.div>
         )}

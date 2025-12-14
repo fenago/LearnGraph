@@ -1,18 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from '@/app/components/Sidebar';
 import { EtherealShadow } from '@/components/ui/ethereal-shadow';
 import { Plus, Edit, Trash2, X, Save, User, Users, AlertCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLearners, useDB } from '@/lib/DBContext';
+import { v4 as uuidv4 } from 'uuid';
 
-interface LearnerProfile {
+interface LearnerFormData {
   userId: string;
   name: string;
-  email?: string;
-  createdAt?: string;
-  lastActive?: string;
+  email: string;
 }
 
 const containerVariants = {
@@ -33,54 +33,34 @@ const itemVariants = {
 };
 
 export default function LearnersPage() {
-  const [learners, setLearners] = useState<LearnerProfile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { isLoading: dbLoading, error: dbError } = useDB();
+  const { learners, loading, createLearner, updateLearner, deleteLearner } = useLearners();
   const [showForm, setShowForm] = useState(false);
-  const [editingLearner, setEditingLearner] = useState<LearnerProfile | null>(null);
-  const [formData, setFormData] = useState({ userId: '', name: '', email: '' });
+  const [editingLearner, setEditingLearner] = useState<LearnerFormData | null>(null);
+  const [formData, setFormData] = useState<LearnerFormData>({ userId: '', name: '', email: '' });
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    fetchLearners();
-  }, []);
-
-  async function fetchLearners() {
-    try {
-      const res = await fetch('/api/learners');
-      const data = await res.json();
-      setLearners(data);
-    } catch (err) {
-      setError('Failed to fetch learners');
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
 
     try {
+      const userId = formData.userId || uuidv4();
       if (editingLearner) {
-        const res = await fetch(`/api/learners/${editingLearner.userId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData),
+        await updateLearner(editingLearner.userId, {
+          name: formData.name,
+          email: formData.email || undefined,
         });
-        if (!res.ok) throw new Error('Failed to update learner');
       } else {
-        const res = await fetch('/api/learners', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData),
+        await createLearner(userId, {
+          name: formData.name,
+          email: formData.email || undefined,
         });
-        if (!res.ok) throw new Error('Failed to create learner');
       }
 
       setShowForm(false);
       setEditingLearner(null);
       setFormData({ userId: '', name: '', email: '' });
-      fetchLearners();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     }
@@ -90,19 +70,21 @@ export default function LearnersPage() {
     if (!confirm('Are you sure you want to delete this learner?')) return;
 
     try {
-      const res = await fetch(`/api/learners/${userId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete learner');
-      fetchLearners();
+      await deleteLearner(userId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     }
   }
 
-  function openEditForm(learner: LearnerProfile) {
-    setEditingLearner(learner);
+  function openEditForm(learner: { userId: string; name?: string; email?: string }) {
+    setEditingLearner({
+      userId: learner.userId,
+      name: learner.name || '',
+      email: learner.email || '',
+    });
     setFormData({
       userId: learner.userId,
-      name: learner.name,
+      name: learner.name || '',
       email: learner.email || '',
     });
     setShowForm(true);
@@ -112,6 +94,29 @@ export default function LearnersPage() {
     setEditingLearner(null);
     setFormData({ userId: '', name: '', email: '' });
     setShowForm(true);
+  }
+
+  // Show DB loading state
+  if (dbLoading) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">Initializing database...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (dbError) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center text-destructive">
+          <AlertCircle className="w-8 h-8 mx-auto mb-3" />
+          <p>Database error: {dbError.message}</p>
+        </div>
+      </div>
+    );
   }
 
   return (

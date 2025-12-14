@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, Clock, Brain, Target, RefreshCw, TrendingDown, CheckCircle, XCircle } from 'lucide-react';
+import { AlertTriangle, Clock, Brain, Target, RefreshCw, TrendingDown, CheckCircle, XCircle, Loader2, AlertCircle } from 'lucide-react';
 import { Sidebar } from '../components/Sidebar';
 import { cn } from '@/lib/utils';
+import { useLearners, useDB } from '@/lib/DBContext';
 
 interface GapItem {
   conceptId: string;
@@ -61,17 +62,16 @@ const itemVariants = {
 };
 
 export default function GapsDashboard() {
-  const [learners, setLearners] = useState<Learner[]>([]);
+  const { db, isLoading: dbLoading, error: dbError, isReady } = useDB();
+  const { learners } = useLearners();
   const [selectedLearnerId, setSelectedLearnerId] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [gaps, setGaps] = useState<{
-    gaps: {
-      missing: GapItem[];
-      partial: GapItem[];
-      forgotten: GapItem[];
-      misconceptions: GapItem[];
-    };
-    summary: { total: number; byType: Record<string, number>; bySeverity: Record<string, number> };
+    missing: GapItem[];
+    partial: GapItem[];
+    forgotten: GapItem[];
+    misconceptions: GapItem[];
+    summary: { total: number; critical: number; byType: Record<string, number> };
   } | null>(null);
   const [reviewQueue, setReviewQueue] = useState<{
     queue: ReviewQueueItem[];
@@ -82,36 +82,88 @@ export default function GapsDashboard() {
     gaps: { total: number };
   } | null>(null);
 
-  useEffect(() => {
-    fetch('/api/learners')
-      .then(res => res.json())
-      .then(data => setLearners(data))
-      .catch(console.error);
-  }, []);
+  const fetchGapData = useCallback(async (userId: string) => {
+    if (!db || !isReady) return;
 
-  const fetchGapData = async (userId: string) => {
     setLoading(true);
     try {
-      const [gapsRes, queueRes, remediationRes] = await Promise.all([
-        fetch(`/api/gaps?userId=${userId}`),
-        fetch(`/api/review-queue?userId=${userId}`),
-        fetch(`/api/remediation?userId=${userId}`),
-      ]);
+      // Detect gaps using the database
+      const detectedGaps = await db.detectGaps(userId);
+      // Map the database format to our local GapItem format
+      const missing: GapItem[] = detectedGaps.missing.map(g => ({
+        conceptId: g.conceptId,
+        conceptName: g.concept?.name,
+        type: 'missing' as const,
+        severity: 'high' as const,
+      }));
+      const partial: GapItem[] = detectedGaps.partial.map(g => ({
+        conceptId: g.conceptId,
+        conceptName: g.concept?.name,
+        type: 'partial' as const,
+        severity: g.mastery < 50 ? 'high' as const : 'medium' as const,
+        mastery: g.mastery,
+      }));
+      const forgotten: GapItem[] = detectedGaps.forgotten.map(g => ({
+        conceptId: g.conceptId,
+        conceptName: g.concept?.name,
+        type: 'forgotten' as const,
+        severity: g.predictedRetention < 50 ? 'high' as const : 'medium' as const,
+        predictedRetention: g.predictedRetention,
+        daysSinceReview: g.daysSinceReview,
+      }));
+      const misconceptions: GapItem[] = detectedGaps.misconceptions.map(g => ({
+        conceptId: g.conceptId,
+        conceptName: g.concept?.name,
+        type: 'misconception' as const,
+        severity: 'high' as const,
+        incorrectUnderstanding: g.misconceptions?.[0]?.description,
+      }));
+      setGaps({
+        missing,
+        partial,
+        forgotten,
+        misconceptions,
+        summary: detectedGaps.summary,
+      });
 
-      if (gapsRes.ok) {
-        setGaps(await gapsRes.json());
-      }
-      if (queueRes.ok) {
-        setReviewQueue(await queueRes.json());
-      }
-      if (remediationRes.ok) {
-        setRemediation(await remediationRes.json());
-      }
+      // Get review queue - already returns {queue, stats}
+      const reviewResult = await db.getReviewQueue(userId);
+      setReviewQueue({
+        queue: reviewResult.queue.map(item => ({
+          conceptId: item.conceptId,
+          conceptName: item.concept?.name,
+          priority: item.priority,
+          predictedRetention: item.predictedRetention,
+          daysSinceReview: item.daysSinceReview,
+          nextReviewDate: item.nextReviewDate,
+          intervalDays: 1, // Default interval, not returned by getReviewQueue
+        })),
+        stats: reviewResult.stats,
+      });
+
+      // Generate remediation plan
+      const remediationResult = await db.generateRemediationPlan(userId);
+      setRemediation({
+        plan: {
+          steps: remediationResult.plan.steps.map(step => ({
+            order: step.order,
+            conceptId: step.conceptId,
+            conceptName: step.concept?.name,
+            gapType: step.type, // Map 'type' to 'gapType'
+            action: step.action,
+            estimatedTime: step.estimatedTime,
+            priority: step.type === 'correct_misconception' ? 'critical' : step.type === 'relearn' ? 'high' : 'medium', // Derive priority from type
+          })),
+          estimatedTotalTime: remediationResult.plan.estimatedTotalTime,
+          priorityFocus: remediationResult.plan.priorityFocus,
+        },
+        gaps: { total: remediationResult.gaps.summary.total },
+      });
     } catch (error) {
       console.error('Error fetching gap data:', error);
     }
     setLoading(false);
-  };
+  }, [db, isReady]);
 
   const handleLearnerChange = (userId: string) => {
     setSelectedLearnerId(userId);
@@ -151,6 +203,28 @@ export default function GapsDashboard() {
       default: return 'bg-muted-foreground';
     }
   };
+
+  if (dbLoading) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">Initializing database...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (dbError) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center text-destructive">
+          <AlertCircle className="w-8 h-8 mx-auto mb-3" />
+          <p>Database error: {dbError.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -239,10 +313,10 @@ export default function GapsDashboard() {
               {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                 {[
-                  { label: 'Missing', value: gaps.gaps.missing.length, icon: XCircle, color: 'red' },
-                  { label: 'Partial', value: gaps.gaps.partial.length, icon: Target, color: 'amber' },
-                  { label: 'Forgotten', value: gaps.gaps.forgotten.length, icon: TrendingDown, color: 'orange' },
-                  { label: 'Misconceptions', value: gaps.gaps.misconceptions.length, icon: AlertTriangle, color: 'purple' },
+                  { label: 'Missing', value: gaps.missing.length, icon: XCircle, color: 'red' },
+                  { label: 'Partial', value: gaps.partial.length, icon: Target, color: 'amber' },
+                  { label: 'Forgotten', value: gaps.forgotten.length, icon: TrendingDown, color: 'orange' },
+                  { label: 'Misconceptions', value: gaps.misconceptions.length, icon: AlertTriangle, color: 'purple' },
                 ].map((card, idx) => (
                   <motion.div
                     key={card.label}
@@ -298,7 +372,7 @@ export default function GapsDashboard() {
                   ) : (
                     <div className="space-y-3 max-h-96 overflow-y-auto scrollbar-hide">
                       {/* Missing */}
-                      {gaps.gaps.missing.map((gap, i) => (
+                      {gaps.missing.map((gap, i) => (
                         <motion.div
                           key={`missing-${i}`}
                           whileHover={{ scale: 1.01 }}
@@ -318,7 +392,7 @@ export default function GapsDashboard() {
                       ))}
 
                       {/* Partial */}
-                      {gaps.gaps.partial.map((gap, i) => (
+                      {gaps.partial.map((gap, i) => (
                         <motion.div
                           key={`partial-${i}`}
                           whileHover={{ scale: 1.01 }}
@@ -335,7 +409,7 @@ export default function GapsDashboard() {
                       ))}
 
                       {/* Forgotten */}
-                      {gaps.gaps.forgotten.map((gap, i) => (
+                      {gaps.forgotten.map((gap, i) => (
                         <motion.div
                           key={`forgotten-${i}`}
                           whileHover={{ scale: 1.01 }}
@@ -355,7 +429,7 @@ export default function GapsDashboard() {
                       ))}
 
                       {/* Misconceptions */}
-                      {gaps.gaps.misconceptions.map((gap, i) => (
+                      {gaps.misconceptions.map((gap, i) => (
                         <motion.div
                           key={`misconception-${i}`}
                           whileHover={{ scale: 1.01 }}

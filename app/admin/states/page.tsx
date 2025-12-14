@@ -1,31 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from '@/app/components/Sidebar';
 import { EtherealShadow } from '@/components/ui/ethereal-shadow';
 import { Plus, Trash2, X, Save, BarChart3, AlertCircle, Loader2, AlertTriangle, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface KnowledgeState {
-  id: string;
-  userId: string;
-  conceptId: string;
-  mastery: number;
-  bloomLevel?: string;
-  lastAccessed?: string;
-  retentionStrength?: number;
-}
-
-interface LearnerProfile {
-  userId: string;
-  name: string;
-}
-
-interface ConceptNode {
-  conceptId: string;
-  name: string;
-}
+import { useLearners, useConcepts, useDB } from '@/lib/DBContext';
+import type { KnowledgeState } from '@/src/models/types';
 
 const BLOOM_LEVELS = [
   'remember',
@@ -72,10 +54,11 @@ function getMasteryBadgeStyle(mastery: number): string {
 }
 
 export default function StatesPage() {
+  const { db, isLoading: dbLoading, error: dbError, isReady } = useDB();
+  const { learners, loading: learnersLoading } = useLearners();
+  const { concepts, loading: conceptsLoading } = useConcepts();
   const [states, setStates] = useState<KnowledgeState[]>([]);
-  const [learners, setLearners] = useState<LearnerProfile[]>([]);
-  const [concepts, setConcepts] = useState<ConceptNode[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [statesLoading, setStatesLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     userId: '',
@@ -87,68 +70,56 @@ export default function StatesPage() {
   const [filterUser, setFilterUser] = useState('');
   const [filterConcept, setFilterConcept] = useState('');
 
-  useEffect(() => {
-    Promise.all([fetchLearners(), fetchConcepts()]).then(() => {
-      fetchStates();
-    });
-  }, []);
-
-  useEffect(() => {
-    fetchStates();
-  }, [filterUser, filterConcept]);
-
-  async function fetchStates() {
+  // Fetch all knowledge states
+  const fetchStates = useCallback(async () => {
+    if (!db || !isReady) return;
+    setStatesLoading(true);
     try {
-      setLoading(true);
-      const params = new URLSearchParams();
-      if (filterUser) params.set('userId', filterUser);
-      if (filterConcept) params.set('conceptId', filterConcept);
-      const url = `/api/states${params.toString() ? '?' + params.toString() : ''}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      setStates(data);
+      // Get all learners and fetch their states
+      const allStates: KnowledgeState[] = [];
+      for (const learner of learners) {
+        const learnerStates = await db.getLearnerKnowledgeStates(learner.userId);
+        allStates.push(...learnerStates);
+      }
+      setStates(allStates);
     } catch (err) {
       setError('Failed to fetch knowledge states');
     } finally {
-      setLoading(false);
+      setStatesLoading(false);
     }
-  }
+  }, [db, isReady, learners]);
 
-  async function fetchLearners() {
-    try {
-      const res = await fetch('/api/learners');
-      const data = await res.json();
-      setLearners(data);
-    } catch (err) {
-      setError('Failed to fetch learners');
+  useEffect(() => {
+    if (isReady && learners.length > 0) {
+      fetchStates();
     }
-  }
+  }, [isReady, learners, fetchStates]);
 
-  async function fetchConcepts() {
-    try {
-      const res = await fetch('/api/concepts');
-      const data = await res.json();
-      setConcepts(data);
-    } catch (err) {
-      setError('Failed to fetch concepts');
-    }
-  }
+  // Filter states based on user/concept selection
+  const filteredStates = useMemo(() => {
+    return states.filter(state => {
+      if (filterUser && state.userId !== filterUser) return false;
+      if (filterConcept && state.conceptId !== filterConcept) return false;
+      return true;
+    });
+  }, [states, filterUser, filterConcept]);
+
+  const loading = dbLoading || learnersLoading || conceptsLoading || statesLoading;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
 
-    try {
-      const res = await fetch('/api/states', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
+    if (!db) {
+      setError('Database not ready');
+      return;
+    }
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to save knowledge state');
-      }
+    try {
+      await db.setKnowledgeState(formData.userId, formData.conceptId, {
+        mastery: formData.mastery,
+        bloomLevel: formData.bloomLevel as any,
+      });
 
       setShowForm(false);
       setFormData({ userId: '', conceptId: '', mastery: 50, bloomLevel: 'understand' });
@@ -161,11 +132,13 @@ export default function StatesPage() {
   async function handleDelete(userId: string, conceptId: string) {
     if (!confirm('Are you sure you want to delete this knowledge state?')) return;
 
+    if (!db) {
+      setError('Database not ready');
+      return;
+    }
+
     try {
-      const res = await fetch(`/api/states?userId=${userId}&conceptId=${conceptId}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) throw new Error('Failed to delete knowledge state');
+      await db.deleteKnowledgeState(userId, conceptId);
       fetchStates();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -183,6 +156,28 @@ export default function StatesPage() {
   }
 
   const canCreateState = learners.length > 0 && concepts.length > 0;
+
+  if (dbLoading) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">Initializing database...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (dbError) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center text-destructive">
+          <AlertCircle className="w-8 h-8 mx-auto mb-3" />
+          <p>Database error: {dbError.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -489,7 +484,7 @@ export default function StatesPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/30">
-                    {states.map((state, index) => (
+                    {filteredStates.map((state, index) => (
                       <motion.tr
                         key={`${state.userId}-${state.conceptId}`}
                         initial={{ opacity: 0, y: 20 }}

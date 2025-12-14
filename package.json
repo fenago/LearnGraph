@@ -27,6 +27,7 @@
     "@hookform/resolvers": "^3.3.2",
     "@radix-ui/react-slot": "^1.2.4",
     "@xyflow/react": "^12.0.0",
+    "browser-level": "^3.0.0",
     "class-variance-authority": "^0.7.1",
     "classic-level": "^1.4.1",
     "clsx": "^2.1.1",

@@ -1,13 +1,15 @@
 # =============================================================================
-# LearnGraph Netlify Configuration
+# LearnGraph Netlify Configuration - Static Export
 # =============================================================================
+# This is a fully client-side application using IndexedDB for data storage.
+# No server-side code required - everything runs in the browser.
 
 [build]
-  # Build command for Next.js
+  # Build command for Next.js static export
   command = "npm run build"
 
-  # Directory to publish (Next.js output)
-  publish = ".next"
+  # Directory to publish (Next.js static export output)
+  publish = "out"
 
 # =============================================================================
 # Environment Variables
@@ -18,15 +20,6 @@
 
   # Next.js telemetry opt-out
   NEXT_TELEMETRY_DISABLED = "1"
-
-  # Skip type checking during build if needed (not recommended for production)
-  # SKIP_TYPE_CHECK = "true"
-
-# =============================================================================
-# Next.js Plugin Configuration
-# =============================================================================
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
 
 # =============================================================================
 # Headers for Security & Performance
@@ -49,32 +42,29 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# =============================================================================
-# Redirects
-# =============================================================================
-# Redirect old routes if needed
-# [[redirects]]
-#   from = "/old-path"
-#   to = "/new-path"
-#   status = 301
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
 
 # =============================================================================
-# Functions Configuration (if using Netlify Functions)
+# Redirects for SPA routing (fallback to index.html)
 # =============================================================================
-[functions]
-  # Directory for Netlify Functions
-  directory = "netlify/functions"
-
-  # Node.js bundler
-  node_bundler = "esbuild"
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
 
 # =============================================================================
 # Dev Server Configuration
 # =============================================================================
 [dev]
-  # Framework detection
-  framework = "next"
-
   # Local dev server port
   port = 3000
 

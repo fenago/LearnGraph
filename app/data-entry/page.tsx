@@ -21,10 +21,13 @@ import {
   ArrowRight,
   Code,
   FileText,
+  Loader2,
 } from 'lucide-react';
 import { Sidebar } from '../components/Sidebar';
 import { EtherealShadow } from '@/components/ui/ethereal-shadow';
 import { cn } from '@/lib/utils';
+import { useDB, useLearners, useConcepts, useEdges, useKnowledgeStates } from '@/lib/DBContext';
+import { v4 as uuidv4 } from 'uuid';
 
 // Animation variants
 const containerVariants = {
@@ -136,10 +139,26 @@ const TAB_CONFIG = [
 ];
 
 export default function DataEntryPage() {
+  const { isLoading: dbLoading, error: dbError } = useDB();
+  const { learners: learnersData, createLearner } = useLearners();
+  const { concepts: conceptsData, createConcept } = useConcepts();
+  const { createEdge } = useEdges();
+
   const [activeTab, setActiveTab] = useState<TabType>('overview');
-  const [learners, setLearners] = useState<Learner[]>([]);
-  const [concepts, setConcepts] = useState<Concept[]>([]);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Map data to local interfaces
+  const learners: Learner[] = learnersData.map(l => ({
+    userId: l.userId,
+    name: l.name,
+    email: l.email,
+  }));
+
+  const concepts: Concept[] = conceptsData.map(c => ({
+    conceptId: c.conceptId,
+    name: c.name,
+    domain: c.domain || 'other',
+  }));
 
   // Input mode toggles
   const [learnerInputMode, setLearnerInputMode] = useState<'form' | 'json'>('form');
@@ -190,37 +209,20 @@ export default function DataEntryPage() {
   });
 
   // Knowledge state form
-  const [stateForm, setStateForm] = useState({
+  const [stateForm, setStateForm] = useState<{
+    userId: string;
+    conceptId: string;
+    mastery: number;
+    bloomLevel: 1 | 2 | 3 | 4 | 5 | 6;
+  }>({
     userId: '',
     conceptId: '',
     mastery: 0,
     bloomLevel: 1,
   });
 
-  useEffect(() => {
-    fetchLearners();
-    fetchConcepts();
-  }, []);
-
-  const fetchLearners = async () => {
-    try {
-      const res = await fetch('/api/learners');
-      const data = await res.json();
-      setLearners(data);
-    } catch {
-      console.error('Failed to fetch learners');
-    }
-  };
-
-  const fetchConcepts = async () => {
-    try {
-      const res = await fetch('/api/concepts');
-      const data = await res.json();
-      setConcepts(data);
-    } catch {
-      console.error('Failed to fetch concepts');
-    }
-  };
+  // Knowledge state hook (needs userId which changes based on form)
+  const { setKnowledgeState } = useKnowledgeStates(stateForm.userId || undefined);
 
   const showMessage = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
@@ -248,7 +250,7 @@ export default function DataEntryPage() {
   const handleAddLearner = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      let payload;
+      let payload: Record<string, unknown>;
 
       if (learnerInputMode === 'json') {
         // Parse and submit raw JSON
@@ -263,7 +265,6 @@ export default function DataEntryPage() {
         payload = {
           name: learnerForm.name,
           email: learnerForm.email || undefined,
-          userId: learnerForm.userId || undefined,
           psychometricScores: Object.keys(psychometricScores).length > 0 ? psychometricScores : undefined,
           learningStyle: learnerForm.learningStylePrimary ? {
             primary: learnerForm.learningStylePrimary,
@@ -279,121 +280,114 @@ export default function DataEntryPage() {
         };
       }
 
-      const res = await fetch('/api/learners', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      const userId = (learnerInputMode === 'json' && payload.userId)
+        ? String(payload.userId)
+        : learnerForm.userId || uuidv4();
 
-      if (res.ok) {
-        showMessage('success', 'Learner added successfully!');
-        setLearnerForm({
-          name: '', email: '', userId: '',
-          learningStylePrimary: '', socialPreference: '', pacePreference: '',
-          workingMemoryCapacity: '', attentionSpan: '', processingSpeed: '', abstractThinking: '',
-        });
-        setPsychometricScores({});
-        setLearnerJson('');
-        fetchLearners();
-      } else {
-        const err = await res.json();
-        showMessage('error', err.error || 'Failed to add learner');
-      }
-    } catch {
-      showMessage('error', 'Failed to add learner');
+      await createLearner(userId, payload as Record<string, unknown>);
+
+      showMessage('success', 'Learner added successfully!');
+      setLearnerForm({
+        name: '', email: '', userId: '',
+        learningStylePrimary: '', socialPreference: '', pacePreference: '',
+        workingMemoryCapacity: '', attentionSpan: '', processingSpeed: '', abstractThinking: '',
+      });
+      setPsychometricScores({});
+      setLearnerJson('');
+    } catch (err) {
+      showMessage('error', err instanceof Error ? err.message : 'Failed to add learner');
     }
   };
 
   const handleAddConcept = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/concepts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conceptId: conceptForm.conceptId,
-          name: conceptForm.name,
-          domain: conceptForm.domain,
-          subdomain: conceptForm.subdomain || undefined,
-          description: conceptForm.description,
-          difficulty: {
-            absolute: conceptForm.difficulty,
-            cognitiveLoad: conceptForm.cognitiveLoad,
-            abstractness: conceptForm.abstractness,
-          },
-        }),
+      await createConcept({
+        conceptId: conceptForm.conceptId,
+        name: conceptForm.name,
+        domain: conceptForm.domain,
+        description: conceptForm.description,
+        difficulty: {
+          absolute: conceptForm.difficulty,
+          cognitiveLoad: conceptForm.cognitiveLoad,
+          abstractness: conceptForm.abstractness,
+        },
       });
-      if (res.ok) {
-        showMessage('success', 'Concept added successfully!');
-        setConceptForm({
-          conceptId: '',
-          name: '',
-          domain: 'mathematics',
-          subdomain: '',
-          description: '',
-          difficulty: 5,
-          cognitiveLoad: 0.5,
-          abstractness: 0.5,
-        });
-        fetchConcepts();
-      } else {
-        const err = await res.json();
-        showMessage('error', err.error || 'Failed to add concept');
-      }
-    } catch {
-      showMessage('error', 'Failed to add concept');
+
+      showMessage('success', 'Concept added successfully!');
+      setConceptForm({
+        conceptId: '',
+        name: '',
+        domain: 'mathematics',
+        subdomain: '',
+        description: '',
+        difficulty: 5,
+        cognitiveLoad: 0.5,
+        abstractness: 0.5,
+      });
+    } catch (err) {
+      showMessage('error', err instanceof Error ? err.message : 'Failed to add concept');
     }
   };
 
   const handleAddPrerequisite = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/edges', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from: prereqForm.from,
-          to: prereqForm.to,
-          strength: prereqForm.strength,
-          reason: prereqForm.reason || undefined,
-        }),
+      await createEdge({
+        from: prereqForm.from,
+        to: prereqForm.to,
+        strength: prereqForm.strength,
+        reason: prereqForm.reason || undefined,
       });
-      if (res.ok) {
-        showMessage('success', 'Prerequisite edge added successfully!');
-        setPrereqForm({ from: '', to: '', strength: 'recommended', reason: '' });
-      } else {
-        const err = await res.json();
-        showMessage('error', err.error || 'Failed to add prerequisite');
-      }
-    } catch {
-      showMessage('error', 'Failed to add prerequisite');
+
+      showMessage('success', 'Prerequisite edge added successfully!');
+      setPrereqForm({ from: '', to: '', strength: 'recommended', reason: '' });
+    } catch (err) {
+      showMessage('error', err instanceof Error ? err.message : 'Failed to add prerequisite');
     }
   };
 
   const handleAddKnowledgeState = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/states', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: stateForm.userId,
-          conceptId: stateForm.conceptId,
-          mastery: stateForm.mastery,
+      await setKnowledgeState(
+        stateForm.userId,
+        stateForm.conceptId,
+        {
+          mastery: stateForm.mastery / 100, // Convert percentage to 0-1
           bloomLevel: stateForm.bloomLevel,
-        }),
-      });
-      if (res.ok) {
-        showMessage('success', 'Knowledge state added successfully!');
-        setStateForm({ userId: '', conceptId: '', mastery: 0, bloomLevel: 1 });
-      } else {
-        const err = await res.json();
-        showMessage('error', err.error || 'Failed to add knowledge state');
-      }
-    } catch {
-      showMessage('error', 'Failed to add knowledge state');
+        }
+      );
+
+      showMessage('success', 'Knowledge state added successfully!');
+      setStateForm({ userId: '', conceptId: '', mastery: 0, bloomLevel: 1 });
+    } catch (err) {
+      showMessage('error', err instanceof Error ? err.message : 'Failed to add knowledge state');
     }
   };
+
+  // Show DB loading state
+  if (dbLoading) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">Initializing database...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (dbError) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center text-destructive">
+          <AlertCircle className="w-8 h-8 mx-auto mb-3" />
+          <p>Database error: {dbError.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -1646,7 +1640,7 @@ export default function DataEntryPage() {
                       <label className="form-label">Bloom Level Achieved</label>
                       <select
                         value={stateForm.bloomLevel}
-                        onChange={(e) => setStateForm({ ...stateForm, bloomLevel: parseInt(e.target.value) })}
+                        onChange={(e) => setStateForm({ ...stateForm, bloomLevel: parseInt(e.target.value) as 1 | 2 | 3 | 4 | 5 | 6 })}
                         className="form-input"
                       >
                         <option value={1}>1 - Remember (recall facts)</option>

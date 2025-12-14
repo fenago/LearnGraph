@@ -31,11 +31,14 @@ import {
   ArrowRight,
   BookOpen,
   X,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import {
   ALL_DOMAIN_IDS,
   DOMAIN_METADATA,
 } from '@/src/models/psychometrics';
+import { useLearners, useConcepts, useDB } from '@/lib/DBContext';
 
 // =============================================================================
 // TYPES
@@ -43,7 +46,7 @@ import {
 
 interface LearnerProfile {
   userId: string;
-  name: string;
+  name?: string;
   psychometricScores?: Record<string, { score: number; confidence: number }>;
 }
 
@@ -235,11 +238,12 @@ const nodeTypes: NodeTypes = {
 // =============================================================================
 
 export default function CombinedGraphPage() {
+  const { db, isLoading: dbLoading, error: dbError, isReady } = useDB();
+  const { learners, getLearner } = useLearners();
+  const { concepts } = useConcepts();
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [loading, setLoading] = useState(true);
-  const [learners, setLearners] = useState<LearnerProfile[]>([]);
-  const [concepts, setConcepts] = useState<ConceptNode[]>([]);
   const [selectedLearner, setSelectedLearner] = useState('');
   const [selectedLearnerData, setSelectedLearnerData] = useState<LearnerProfile | null>(null);
   const [knowledgeStates, setKnowledgeStates] = useState<KnowledgeState[]>([]);
@@ -249,9 +253,23 @@ export default function CombinedGraphPage() {
   const [showConcepts, setShowConcepts] = useState(true);
   const [showBridges, setShowBridges] = useState(true);
 
-  useEffect(() => {
-    fetchInitialData();
-  }, []);
+  const fetchLearnerData = useCallback(async (userId: string) => {
+    if (!db || !isReady) return;
+    try {
+      setLoading(true);
+      const [profileData, statesData] = await Promise.all([
+        getLearner(userId),
+        db.getLearnerKnowledgeStates(userId),
+      ]);
+
+      setSelectedLearnerData(profileData || null);
+      setKnowledgeStates(Array.isArray(statesData) ? statesData : []);
+    } catch (err) {
+      console.error('Failed to fetch learner data:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [db, isReady, getLearner]);
 
   useEffect(() => {
     if (selectedLearner) {
@@ -260,48 +278,11 @@ export default function CombinedGraphPage() {
       setSelectedLearnerData(null);
       setKnowledgeStates([]);
     }
-  }, [selectedLearner]);
+  }, [selectedLearner, fetchLearnerData]);
 
   useEffect(() => {
     buildGraph();
   }, [selectedLearnerData, knowledgeStates, showDomains, showConcepts, showBridges, concepts]);
-
-  async function fetchInitialData() {
-    try {
-      const [learnersRes, conceptsRes] = await Promise.all([
-        fetch('/api/learners'),
-        fetch('/api/concepts'),
-      ]);
-
-      const learnersData = await learnersRes.json();
-      const conceptsData = await conceptsRes.json();
-
-      setLearners(Array.isArray(learnersData) ? learnersData : []);
-      setConcepts(Array.isArray(conceptsData) ? conceptsData : []);
-    } catch (err) {
-      console.error('Failed to fetch initial data:', err);
-    }
-  }
-
-  async function fetchLearnerData(userId: string) {
-    try {
-      setLoading(true);
-      const [profileRes, statesRes] = await Promise.all([
-        fetch(`/api/learners/${userId}`),
-        fetch(`/api/knowledge-states?userId=${userId}`),
-      ]);
-
-      const profileData = await profileRes.json();
-      const statesData = await statesRes.json();
-
-      setSelectedLearnerData(profileData);
-      setKnowledgeStates(Array.isArray(statesData) ? statesData : []);
-    } catch (err) {
-      console.error('Failed to fetch learner data:', err);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   const buildGraph = useCallback(() => {
     if (!selectedLearnerData) {
@@ -451,6 +432,30 @@ export default function CombinedGraphPage() {
     domains: ALL_DOMAIN_IDS.length,
     knowledgeStates: knowledgeStates.length,
   }), [learners, concepts, knowledgeStates]);
+
+  // DB loading state
+  if (dbLoading) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">Initializing database...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // DB error state
+  if (dbError) {
+    return (
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <div className="text-center text-destructive">
+          <AlertCircle className="w-8 h-8 mx-auto mb-3" />
+          <p>Database error: {dbError.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-background">
