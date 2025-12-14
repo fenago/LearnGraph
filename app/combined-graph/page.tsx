@@ -132,9 +132,9 @@ function LearnerNode({ data }: { data: Record<string, unknown> }) {
         <span className="font-bold text-indigo-700 dark:text-indigo-300">{data.label as string}</span>
       </div>
       <div className="text-xs text-muted-foreground">Learner Profile</div>
-      {data.domainCount && (
+      {typeof data.domainCount === 'number' && data.domainCount > 0 && (
         <div className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
-          {data.domainCount as number} domains assessed
+          {data.domainCount} domains assessed
         </div>
       )}
     </div>

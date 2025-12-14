@@ -1,0 +1,82 @@
+# =============================================================================
+# LearnGraph Netlify Configuration
+# =============================================================================
+
+[build]
+  # Build command for Next.js
+  command = "npm run build"
+
+  # Directory to publish (Next.js output)
+  publish = ".next"
+
+# =============================================================================
+# Environment Variables
+# =============================================================================
+[build.environment]
+  # Node.js version
+  NODE_VERSION = "20"
+
+  # Next.js telemetry opt-out
+  NEXT_TELEMETRY_DISABLED = "1"
+
+  # Skip type checking during build if needed (not recommended for production)
+  # SKIP_TYPE_CHECK = "true"
+
+# =============================================================================
+# Next.js Plugin Configuration
+# =============================================================================
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# =============================================================================
+# Headers for Security & Performance
+# =============================================================================
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/icons/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# =============================================================================
+# Redirects
+# =============================================================================
+# Redirect old routes if needed
+# [[redirects]]
+#   from = "/old-path"
+#   to = "/new-path"
+#   status = 301
+
+# =============================================================================
+# Functions Configuration (if using Netlify Functions)
+# =============================================================================
+[functions]
+  # Directory for Netlify Functions
+  directory = "netlify/functions"
+
+  # Node.js bundler
+  node_bundler = "esbuild"
+
+# =============================================================================
+# Dev Server Configuration
+# =============================================================================
+[dev]
+  # Framework detection
+  framework = "next"
+
+  # Local dev server port
+  port = 3000
+
+  # Auto-launch browser
+  autoLaunch = false
