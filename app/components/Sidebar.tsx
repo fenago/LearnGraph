@@ -19,6 +19,7 @@ import {
   UserCircle,
   Hexagon,
   Layers,
+  Info,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { cn } from '@/lib/utils';
@@ -37,6 +38,7 @@ const navItems = [
   { href: '/domains', label: 'Domain Graph', icon: Hexagon, description: 'Psychometrics (Graph A)' },
   { href: '/combined-graph', label: 'Combined View', icon: Layers, description: 'Both graphs + bridge' },
   { href: '/edu-psychology', label: 'Edu Psychology', icon: GraduationCap, description: 'Learn theory' },
+  { href: '/about', label: 'About LearnGraph', icon: Info, description: 'System overview' },
   { href: '/status', label: 'System Status', icon: Activity, description: 'Health monitoring' },
   { href: '/tests', label: 'Functional Tests', icon: TestTube2, description: 'Run tests' },
 ];

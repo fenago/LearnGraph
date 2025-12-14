@@ -184,7 +184,9 @@ const zpd = await db.computeZPD('user-123');
 
 ---
 
-### Phase 6: Adaptive Content Delivery [MEDIUM]
+### Phase 6: Adaptive Content Delivery & AI Curriculum Ingestion [MEDIUM]
+
+#### Part A: Content Delivery
 - [ ] `scoreContentMatch()` algorithm
 - [ ] `buildSessionPlan()` function
 - [ ] `determinePresentationStrategy()` function
@@ -192,7 +194,37 @@ const zpd = await db.computeZPD('user-123');
 - [ ] Break recommendations
 - [ ] **FUNCTIONAL TEST**: Start session → content matches your style
 
-**Pass Criteria**: 70% content match satisfaction, 80% session completion
+#### Part B: AI Curriculum Ingestion
+- [ ] `parseCurriculumInput()` - Extract topics from syllabus/text/documents
+- [ ] `inferPrerequisites()` - AI determines concept dependencies
+- [ ] `estimateDifficulty()` - Rate concepts 1-10 based on complexity
+- [ ] `generateBloomLevels()` - Map to Bloom's taxonomy
+- [ ] `presentForReview()` - Show draft graph in visual UI
+- [ ] `applyTeacherCorrections()` - Process teacher edits
+- [ ] `learnFromCorrections()` - Improve future suggestions
+- [ ] Curriculum Import UI (`/admin/import-curriculum`)
+- [ ] API endpoint (`/api/curriculum/generate`)
+- [ ] Support for text, PDF, Word document inputs
+- [ ] **FUNCTIONAL TEST**: Teacher describes course → AI generates graph → teacher approves in < 5 min
+
+#### Part C: AI Assessment Generation
+- [ ] Assessment toggle configuration (`assessmentsEnabled: boolean`)
+- [ ] `generateAssessments()` - Create questions from Bloom levels
+- [ ] `generateQuickCheck()` - 2-3 gating questions
+- [ ] `generateMasteryTest()` - 5-10 questions for mastery %
+- [ ] `generateMisconceptionProbes()` - Detect wrong mental models
+- [ ] Assessment Settings UI (`/admin/settings/assessments`)
+- [ ] Assessment Review UI (`/admin/assessments`)
+- [ ] API endpoints (`/api/assessments/generate`, `/api/assessments/settings`)
+- [ ] Question types: multiple_choice, numeric, short_answer, worked_problem, classification, ordering
+- [ ] Quick Check gating (must pass to proceed)
+- [ ] Mastery Test → update knowledge state
+- [ ] **FUNCTIONAL TEST**: Toggle on → import curriculum → assessments auto-generated → teacher reviews in < 2 min
+
+**Pass Criteria**:
+- Content: 70% content match satisfaction, 80% session completion
+- Curriculum: 80% of AI edges approved, < 5 min to full course graph
+- Assessments: 80% AI questions approved, toggle works < 100ms, < 2 min teacher review per concept
 
 ---
 
@@ -383,7 +415,7 @@ After:   ### Phase 1: Core Database Foundation [DONE]
 | 3 | Click concept → see "First learn: A → B → C" |
 | 4 | Ask "What next?" → personalized recommendations |
 | 5 | View gaps → forgotten topics warned |
-| 6 | Start session → content matches your style |
+| 6 | Start session → content matches style; Describe course → AI generates graph → approve in < 5 min; Toggle assessments on → auto-generate questions |
 | 7 | Ask tutor → knows your history/struggles |
 | 8 | Export → valid training data |
 

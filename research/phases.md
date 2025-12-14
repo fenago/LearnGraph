@@ -276,20 +276,37 @@ assert(retention < 80); // Should have decayed
 
 ---
 
-## Phase 6: Adaptive Content Delivery
+## Phase 6: Adaptive Content Delivery & AI Curriculum Ingestion
 
 ### Description
-Match content (videos, readings, exercises) to each learner's profile and build personalized learning sessions.
+Two major capabilities:
+1. **Content Delivery**: Match content (videos, readings, exercises) to each learner's profile and build personalized learning sessions
+2. **AI Curriculum Ingestion**: Enable teachers to quickly add courses by describing them in natural language, with AI generating the knowledge graph
 
 ### What Gets Built
+
+#### Part A: Content Delivery
 - Content scoring algorithm (modality match, difficulty match)
 - Session planning (warmup → core → practice → assessment)
 - Presentation strategy selection (pace, depth, interactivity)
 - Adaptive pacing with real-time adjustments
 
+#### Part B: AI Curriculum Ingestion
+- `parseCurriculumInput()` - Extract topics from syllabus, text description, or uploaded documents
+- `inferPrerequisites()` - AI determines concept dependencies based on domain knowledge
+- `estimateDifficulty()` - Rate concepts 1-10 based on complexity and grade level
+- `generateBloomLevels()` - Map learning objectives to Bloom's taxonomy
+- `presentForReview()` - Show draft graph in visual UI for teacher approval
+- `applyTeacherCorrections()` - Process teacher edits to the generated graph
+- `learnFromCorrections()` - Improve future suggestions based on teacher feedback
+- Curriculum Import UI (`/admin/import-curriculum`)
+- API endpoint (`/api/curriculum/generate`)
+
 ### Technical Tests
 
 ```typescript
+// === Part A: Content Delivery ===
+
 // Score content for different learners
 const visualLearner = { learningStyle: { primary: 'visual' } };
 const videoContent = { modalityTags: ['visual', 'auditory'] };
@@ -303,9 +320,47 @@ assert(videoScore > textScore); // Visual learner prefers video
 const plan = buildSessionPlan(contentLibrary, learnerProfile, 45); // 45 min
 assert(plan.totalTime <= 45);
 assert(plan.core.length > 0);
+
+// === Part B: AI Curriculum Ingestion ===
+
+// Parse curriculum from text description
+const input = `
+  I'm teaching Algebra 1 to 9th graders. We cover:
+  - Solving one-step equations
+  - Solving two-step equations
+  - Graphing linear equations
+  - Systems of equations
+`;
+const draftGraph = await parseCurriculumInput(input);
+assert(draftGraph.concepts.length >= 4);
+assert(draftGraph.edges.length >= 3); // At least some prerequisites inferred
+
+// Verify prerequisite inference
+const twoStepEq = draftGraph.concepts.find(c => c.name.includes('two-step'));
+const prerequisites = draftGraph.edges.filter(e => e.to === twoStepEq.id);
+assert(prerequisites.length > 0); // Should require one-step equations
+
+// Verify difficulty estimation
+assert(draftGraph.concepts.every(c => c.difficulty >= 1 && c.difficulty <= 10));
+
+// Verify Bloom level generation
+assert(draftGraph.concepts.every(c => c.bloomLevel !== undefined));
+
+// Test teacher correction workflow
+const corrected = await applyTeacherCorrections(draftGraph, {
+  addEdge: { from: 'coordinate_plane', to: 'graphing_linear_equations' },
+  updateDifficulty: { conceptId: 'systems_of_equations', newDifficulty: 8 }
+});
+assert(corrected.edges.some(e => e.from === 'coordinate_plane'));
+
+// Test learning from corrections
+await learnFromCorrections(draftGraph, corrected);
+// Future generations should be more accurate
 ```
 
 ### Functional Tests (End-User Perspective)
+
+#### Part A: Content Delivery Tests
 
 | Test | What You Do | What You Should See |
 |------|-------------|---------------------|
@@ -317,7 +372,24 @@ assert(plan.core.length > 0);
 | **Content alternatives** | Say "I don't like this video" or "Show me something else" | Alternative content in same topic but different format: "Here's an article explaining the same concept" or "Try this interactive demo instead" |
 | **Difficulty mismatch alert** | Content is too easy or too hard | System detects: "This seems too easy for you - want to skip ahead?" or "This is quite challenging - want some extra support?" |
 
+#### Part B: AI Curriculum Ingestion Tests
+
+| Test | What You Do | What You Should See |
+|------|-------------|---------------------|
+| **Quick course creation** | Type "I'm teaching intro Machine Learning covering linear regression, logistic regression, decision trees, and neural networks" | AI generates draft graph with ~10-15 nodes including inferred prerequisites (linear algebra, statistics), connected with edges, each with difficulty ratings |
+| **Syllabus upload** | Upload a PDF syllabus for a Data Analytics course | System extracts topics from document, identifies weekly progression, generates concept graph matching syllabus structure |
+| **Review draft graph** | Look at the AI-generated graph in visualization | See nodes (concepts) and arrows (prerequisites) with AI's suggestions. Concepts have proposed difficulty ratings and Bloom levels. |
+| **Edit generated graph** | Click a concept node and change its difficulty from 5 to 7 | Node updates, change is tracked as teacher correction |
+| **Add missing prerequisite** | Notice AI missed that "Graphing" requires "Slope", add the edge | Edge appears in graph, system notes the correction for future learning |
+| **Remove incorrect edge** | AI incorrectly linked two unrelated concepts, delete the edge | Edge removed, system learns this pattern shouldn't be suggested |
+| **Approve and save** | Click "Approve Graph" after reviewing | All concepts and edges are saved to the knowledge graph, available for student use |
+| **Generate for different subjects** | Create courses for Math, History, Programming | AI adapts to different domains, uses appropriate terminology and relationships for each subject |
+| **Partial approval** | Approve some concepts but mark others for revision | Approved concepts saved, others stay in draft state for further editing |
+| **Template reuse** | Start a new "Algebra 1" course when one already exists | System offers to clone existing template or generate fresh, shows diff if generating new |
+
 ### Target Metrics
+
+#### Part A: Content Delivery Metrics
 
 | Metric | Target | How to Verify |
 |--------|--------|---------------|
@@ -326,6 +398,364 @@ assert(plan.core.length > 0);
 | Pacing adjustment effectiveness | 25% improvement in success rate | Before/after comparison |
 | Time budget accuracy | ±10% of plan | Actual vs planned |
 | Alternative content satisfaction | 75% prefer alternative when offered | Track switches |
+
+#### Part B: AI Curriculum Ingestion Metrics
+
+| Metric | Target | How to Verify |
+|--------|--------|---------------|
+| Concept extraction accuracy | 90% of mentioned topics captured | Compare input vs output |
+| Prerequisite inference accuracy | 80% of AI-suggested edges approved by teacher | Track approval rate |
+| Difficulty estimation accuracy | ±1.5 points of teacher's rating | Compare AI vs teacher |
+| Time to full course graph | < 5 minutes from input to approved graph | Time tracking |
+| Teacher correction rate | < 20% of edges need modification | Track edit frequency |
+| Cross-domain accuracy | Works for STEM, humanities, arts | Test diverse subjects |
+| Learning improvement | 10% better suggestions after corrections | A/B test over time |
+
+### Implementation Notes
+
+#### AI Curriculum Ingestion Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    CURRICULUM INGESTION PIPELINE                         │
+│                                                                          │
+│  INPUT LAYER                                                             │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  Text description │ PDF upload │ Word doc │ Existing standards   │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                              │                                           │
+│                              ▼                                           │
+│  EXTRACTION LAYER                                                        │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  • Topic identification (NER for educational concepts)           │    │
+│  │  • Learning objective parsing                                    │    │
+│  │  • Grade level / difficulty inference                            │    │
+│  │  • Domain classification (Math, Science, Language, etc.)         │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                              │                                           │
+│                              ▼                                           │
+│  INFERENCE LAYER (LLM-Powered)                                           │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  • Prerequisite inference using domain knowledge                 │    │
+│  │  • Difficulty estimation based on cognitive complexity           │    │
+│  │  • Bloom's taxonomy mapping                                      │    │
+│  │  • Related concept suggestion                                    │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                              │                                           │
+│                              ▼                                           │
+│  GRAPH GENERATION                                                        │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  • Create ConceptNode objects                                    │    │
+│  │  • Create PrerequisiteEdge objects                               │    │
+│  │  • Validate graph connectivity (no orphans)                      │    │
+│  │  • Check for cycles (prerequisites can't be circular)            │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                              │                                           │
+│                              ▼                                           │
+│  REVIEW UI                                                               │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  • Visual graph editor (React Flow)                              │    │
+│  │  • Inline editing of concept properties                          │    │
+│  │  • Drag-and-drop edge creation                                   │    │
+│  │  • Approve/reject/modify workflow                                │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                              │                                           │
+│                              ▼                                           │
+│  LEARNING LAYER                                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  • Store teacher corrections as training signal                  │    │
+│  │  • Build domain-specific patterns                                │    │
+│  │  • Improve future inference accuracy                             │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Supported Input Formats
+
+| Format | Extraction Method | Notes |
+|--------|-------------------|-------|
+| Plain text | Direct LLM parsing | Fastest, most flexible |
+| PDF syllabus | PDF parsing + LLM | Preserves document structure |
+| Word document | DOCX parsing + LLM | Handles formatting |
+| Markdown | Direct parsing | Great for developers |
+| JSON curriculum | Schema validation | For programmatic import |
+| Common Core standards | Pre-mapped templates | US education standards |
+| AP/IB frameworks | Pre-mapped templates | Advanced placement courses |
+
+#### Example: Teacher Workflow
+
+```
+1. Teacher navigates to /admin/import-curriculum
+
+2. Teacher types or uploads:
+   "Data Analytics 101 for business students:
+    - Spreadsheet basics (Excel/Sheets)
+    - Data cleaning techniques
+    - Pivot tables
+    - Basic SQL queries
+    - Python pandas introduction
+    - Data visualization with charts
+    - Dashboard creation"
+
+3. System generates draft graph (3-5 seconds):
+   - 12 concept nodes (7 from input + 5 inferred prerequisites)
+   - 15 prerequisite edges
+   - Difficulty ratings 2-7
+   - All tagged as domain: "Data Analytics"
+
+4. Teacher reviews in graph UI:
+   - Approves 13/15 edges
+   - Deletes 1 incorrect edge (AI thought SQL requires pivot tables)
+   - Adds 1 missing edge (visualization requires spreadsheet basics)
+   - Adjusts 2 difficulty ratings
+
+5. Teacher clicks "Save to Knowledge Graph"
+   - All concepts and edges saved
+   - Course ready for student enrollment
+   - Total time: ~4 minutes
+```
+
+### Part C: AI Assessment Generation
+
+#### Description
+Automatically generate assessments when concepts are created (or imported via curriculum ingestion). Assessments provide the feedback loop needed to accurately measure mastery rather than relying solely on self-reported progress. **This feature includes a toggle switch to enable/disable assessment generation.**
+
+#### What Gets Built
+- `generateAssessments()` - Create assessment questions for a concept based on Bloom levels
+- `generateMisconceptionProbes()` - Create questions that detect common misconceptions
+- `generateQuickCheck()` - 2-3 questions that gate progression (must pass to proceed)
+- `generateMasteryTest()` - 5-10 questions that determine mastery percentage
+- Assessment toggle configuration (`assessmentsEnabled: boolean`)
+- Assessment Settings UI (`/admin/settings/assessments`)
+- Assessment Review UI (`/admin/assessments`)
+- API endpoints (`/api/assessments/generate`, `/api/assessments/settings`)
+
+#### Assessment Types
+
+| Type | Purpose | Question Count | When Used |
+|------|---------|----------------|-----------|
+| **Quick Check** | Gate progression | 2-3 | Before marking concept "complete" |
+| **Mastery Test** | Determine mastery % | 5-10 | After studying concept content |
+| **Misconception Probe** | Detect wrong mental models | 3-5 | When errors indicate confusion |
+| **Spaced Review** | Verify retention | 2-3 | During spaced repetition reviews |
+
+#### Question Types
+
+| Type | Format | Example |
+|------|--------|---------|
+| `multiple_choice` | 4 options, 1 correct | "What is 2x when x=3?" A) 5 B) 6 C) 8 D) 9 |
+| `numeric` | Free-form number entry | "Solve: 3x + 5 = 14. x = ___" |
+| `short_answer` | Text response | "Define what a linear equation is." |
+| `worked_problem` | Multi-step with shown work | "Solve step by step: 2x + 3 = 7" |
+| `classification` | Sort items into categories | "Drag each expression to: Linear / Non-linear" |
+| `ordering` | Arrange in sequence | "Order the steps for solving this equation" |
+
+#### Assessment Configuration Schema
+
+```typescript
+interface AssessmentConfig {
+  enabled: boolean;                    // Master toggle for all assessments
+  generateOnCurriculumImport: boolean; // Auto-generate when importing curriculum
+  generateOnConceptCreate: boolean;    // Auto-generate when adding single concepts
+  quickCheckRequired: boolean;         // Require Quick Check before progression
+  masteryThreshold: number;            // % needed to pass (default: 70)
+  questionTypes: string[];             // Allowed types (default: all)
+  customPrompts?: {                    // Override AI generation prompts
+    quickCheck?: string;
+    masteryTest?: string;
+    misconceptionProbe?: string;
+  };
+}
+
+interface Assessment {
+  id: string;
+  conceptId: string;
+  type: 'quick_check' | 'mastery_test' | 'misconception_probe' | 'spaced_review';
+  questions: Question[];
+  generatedAt: string;
+  generatedBy: 'ai' | 'teacher';
+  approved: boolean;
+}
+
+interface Question {
+  id: string;
+  type: 'multiple_choice' | 'numeric' | 'short_answer' | 'worked_problem' | 'classification' | 'ordering';
+  bloomLevel: 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create';
+  prompt: string;
+  options?: string[];           // For multiple_choice
+  correctAnswer: string | string[];
+  explanation: string;          // Shown after answering
+  misconceptionTarget?: string; // What misconception this tests for
+  difficulty: number;           // 1-10
+}
+```
+
+#### Technical Tests
+
+```typescript
+// === Part C: AI Assessment Generation ===
+
+// Verify assessment toggle works
+const settings = await getAssessmentSettings();
+assert(typeof settings.enabled === 'boolean');
+
+// Toggle assessments off
+await updateAssessmentSettings({ enabled: false });
+const concept = await createConcept({ id: 'test-concept' });
+const assessments = await getAssessmentsForConcept('test-concept');
+assert(assessments.length === 0); // No assessments generated when disabled
+
+// Toggle assessments on
+await updateAssessmentSettings({ enabled: true });
+const concept2 = await createConcept({ id: 'test-concept-2' });
+const assessments2 = await getAssessmentsForConcept('test-concept-2');
+assert(assessments2.length > 0); // Assessments auto-generated when enabled
+
+// Generate assessments for a concept
+const linearEquations = { id: 'linear-equations', bloomLevels: {...} };
+const assessments = await generateAssessments(linearEquations);
+
+// Verify assessment types generated
+assert(assessments.some(a => a.type === 'quick_check'));
+assert(assessments.some(a => a.type === 'mastery_test'));
+
+// Verify question counts
+const quickCheck = assessments.find(a => a.type === 'quick_check');
+assert(quickCheck.questions.length >= 2 && quickCheck.questions.length <= 3);
+
+const masteryTest = assessments.find(a => a.type === 'mastery_test');
+assert(masteryTest.questions.length >= 5 && masteryTest.questions.length <= 10);
+
+// Verify question types match concept Bloom levels
+const bloomLevels = Object.keys(linearEquations.bloomLevels);
+const questionBlooms = masteryTest.questions.map(q => q.bloomLevel);
+assert(questionBlooms.some(b => bloomLevels.includes(b)));
+
+// Verify misconception probes target known issues
+const misconceptionProbes = await generateMisconceptionProbes('linear-equations');
+assert(misconceptionProbes.every(q => q.misconceptionTarget));
+
+// Test Quick Check gating
+const quickCheckResult = await submitQuickCheck('user-001', 'linear-equations', answers);
+if (quickCheckResult.passed) {
+  assert(quickCheckResult.canProceed === true);
+} else {
+  assert(quickCheckResult.canProceed === false);
+  assert(quickCheckResult.retryAllowed === true);
+}
+
+// Test mastery calculation from assessment
+const masteryResult = await submitMasteryTest('user-001', 'linear-equations', answers);
+assert(masteryResult.masteryPercentage >= 0 && masteryResult.masteryPercentage <= 100);
+assert(typeof masteryResult.updatedKnowledgeState === 'object');
+```
+
+#### Functional Tests (End-User Perspective)
+
+| Test | What You Do | What You Should See |
+|------|-------------|---------------------|
+| **Toggle assessments on** | Go to Settings → Assessments, flip "Enable Assessments" switch ON | Switch turns blue, confirmation "Assessments enabled" |
+| **Toggle assessments off** | Flip "Enable Assessments" switch OFF | Switch turns gray, new concepts created without assessments |
+| **Auto-generate on import** | With assessments enabled, import a curriculum via AI | Each generated concept includes Quick Check + Mastery Test questions |
+| **Review generated questions** | Open a concept, click "Assessments" tab | See all questions organized by type (Quick Check, Mastery Test), each showing question, options, correct answer, explanation |
+| **Edit a question** | Click edit on a multiple choice question, change an option | Question updates, marked as "Teacher Modified" |
+| **Delete a question** | Click delete on a low-quality question | Question removed, system notes teacher preference |
+| **Add custom question** | Click "Add Question", write your own | New question added to assessment, marked as "Teacher Created" |
+| **Take Quick Check** | As a learner, finish studying a concept, click "Check Understanding" | 2-3 questions appear, must answer all, immediate feedback per question |
+| **Pass Quick Check** | Answer all Quick Check questions correctly | "Nice! You can move on." Concept marked complete. |
+| **Fail Quick Check** | Get 1+ questions wrong | "Let's review this." Shown explanation for missed questions, option to retry or review content |
+| **Take Mastery Test** | Click "Test My Knowledge" on a concept | 5-10 questions, varied types, shown difficulty progression |
+| **See mastery result** | Complete Mastery Test | "You scored 78%!" Updates knowledge state, shows areas to strengthen |
+| **Misconception detection** | Get specific question wrong that targets a misconception | "It looks like you might think X, but actually Y. Here's why..." |
+| **Spaced review assessment** | Return to review a concept from spaced repetition queue | 2-3 review questions, if passed → interval extends, if failed → more review |
+| **Assessment analytics** | Teacher views dashboard for course assessments | See pass rates per concept, common wrong answers, question difficulty stats |
+
+#### Target Metrics
+
+| Metric | Target | How to Verify |
+|--------|--------|---------------|
+| Assessment generation time | < 10 seconds per concept | Timing logs |
+| Question quality (teacher approval) | 80% of AI questions approved | Track approval rate |
+| Quick Check accuracy | 85% correlation with actual mastery | Compare to longer assessments |
+| Mastery Test reliability | 0.8+ Cronbach's alpha | Statistical analysis |
+| Misconception detection rate | 70% of misconceptions caught | Compare to tutoring sessions |
+| Toggle responsiveness | < 100ms | UI timing |
+| Teacher time to review | < 2 min per concept's assessments | Time tracking |
+
+#### Implementation Notes
+
+##### Assessment Generation Pipeline
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    ASSESSMENT GENERATION PIPELINE                        │
+│                                                                          │
+│  CONFIG CHECK                                                            │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  if (!assessmentConfig.enabled) return [];                       │    │
+│  │  Check: generateOnCurriculumImport | generateOnConceptCreate     │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                              │                                           │
+│                              ▼                                           │
+│  CONCEPT ANALYSIS                                                        │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  • Extract Bloom levels and learning objectives                  │    │
+│  │  • Identify key terms and procedures                             │    │
+│  │  • Map to prerequisite concepts                                  │    │
+│  │  • Detect common misconceptions from domain knowledge            │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                              │                                           │
+│                              ▼                                           │
+│  QUESTION GENERATION (LLM-Powered)                                       │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  For each Bloom level:                                           │    │
+│  │    • Generate questions matching cognitive level                 │    │
+│  │    • Create distractors that test understanding (not tricks)     │    │
+│  │    • Write explanations for correct and incorrect answers        │    │
+│  │    • Tag misconceptions each question might reveal               │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                              │                                           │
+│                              ▼                                           │
+│  ASSESSMENT ASSEMBLY                                                     │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  Quick Check: 2-3 questions, 'understand' + 'apply' levels       │    │
+│  │  Mastery Test: 5-10 questions, all Bloom levels, varied types    │    │
+│  │  Misconception Probes: 3-5 targeted questions                    │    │
+│  │  Spaced Review: 2-3 questions, random from mastery pool          │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                              │                                           │
+│                              ▼                                           │
+│  TEACHER REVIEW (Optional but Recommended)                               │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  • Present questions in review UI                                │    │
+│  │  • Allow edit/delete/add                                         │    │
+│  │  • Track corrections for future improvement                      │    │
+│  │  • Bulk approve or individual review                             │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                              │                                           │
+│                              ▼                                           │
+│  KNOWLEDGE STATE INTEGRATION                                             │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  Assessment results → Update mastery percentage                  │    │
+│  │  Quick Check fail → Flag for review, don't mark complete         │    │
+│  │  Misconception detected → Add to learner profile                 │    │
+│  │  Spaced review result → Adjust SM-2 interval                     │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+##### How Assessments Feed the System
+
+| Assessment Event | System Update |
+|------------------|---------------|
+| Quick Check passed | Concept marked complete, unlock dependent concepts |
+| Quick Check failed | Flag for review, suggest content re-engagement |
+| Mastery Test completed | Update `knowledgeState.mastery` with exact % |
+| Wrong answer on probe | Add misconception to `learnerProfile.misconceptions` |
+| Spaced review passed | Increase SM-2 interval (e.g., 3 days → 7 days) |
+| Spaced review failed | Reset SM-2 interval, add to priority review queue |
 
 ---
 
@@ -577,7 +1007,7 @@ This delivers the core value: **personalized learning paths based on who you are
 | 3 | Can I see prerequisites for any concept? |
 | 4 | Does "What should I learn next?" give me a sensible answer? |
 | 5 | Does it warn me about forgotten topics? |
-| 6 | Does content match my learning style? |
+| 6 | Does content match my learning style? Can I describe a course and have AI generate the graph in < 5 min? |
 | 7 | Does the AI tutor know my history and struggles? |
 | 8 | Can I export my data for analysis? |
 | 9 | Can I add learners/concepts via forms and see them in the graph? |
